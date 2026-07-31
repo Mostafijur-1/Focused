@@ -1,4 +1,4 @@
-﻿-- Focused Milestone 3: additive product-data foundation
+-- Focused Milestone 3: additive product-data foundation
 -- This migration intentionally builds on the immutable authentication baseline.
 -- PostgreSQL DDL is transactional; deployment uses prisma migrate deploy with DIRECT_URL.
 
@@ -67,42 +67,6 @@ CREATE TYPE "InboxStatus" AS ENUM ('RECEIVED', 'PROCESSING', 'PROCESSED', 'RETRY
 
 -- CreateEnum
 CREATE TYPE "ChallengeStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ACTIVE', 'CLOSED', 'CANCELLED');
-
-CONSTRAINT "users_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("userId")
-);
-
-CONSTRAINT "oauth_accounts_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "oauth_transactions_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "auth_sessions_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "auth_one_time_tokens_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "roles_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "permissions_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "user_roles_pkey" PRIMARY KEY ("userId","roleId")
-);
-
-CONSTRAINT "role_permissions_pkey" PRIMARY KEY ("roleId","permissionId")
-);
-
-CONSTRAINT "consents_pkey" PRIMARY KEY ("id")
-);
 
 -- CreateTable
 CREATE TABLE "user_preferences" (
@@ -990,9 +954,6 @@ CREATE TABLE "metric_definitions" (
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 CONSTRAINT "metric_definitions_pkey" PRIMARY KEY ("id")
-);
-
-CONSTRAINT "audit_events_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
