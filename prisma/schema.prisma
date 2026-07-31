@@ -199,6 +199,20 @@ enum JobStatus {
   EXPIRED
 }
 
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum InboxStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  RETRYABLE_FAILURE
+  DEAD_LETTER
+}
+
 enum ChallengeStatus {
   DRAFT
   PUBLISHED
@@ -262,6 +276,7 @@ model User {
   reportJobs             ReportJob[]
   exportJobs             ExportJob[]
   idempotencyRecords     IdempotencyRecord[]
+  backgroundJobs         BackgroundJob[]
   auditEvents            AuditEvent[]            @relation("AuditActor")
   outboxEvents           OutboxEvent[]
 
@@ -1352,35 +1367,46 @@ model ExportJob {
 }
 
 model IdempotencyRecord {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  route       String   @db.VarChar(160)
-  key         String   @db.VarChar(160)
-  requestHash String   @db.Char(64)
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @db.Uuid
+  route       String            @db.VarChar(160)
+  key         String            @db.VarChar(160)
+  requestHash String            @db.Char(64)
+  status      IdempotencyStatus @default(PROCESSING)
   statusCode  Int?
   response    Json?
-  resourceId  String?  @db.Uuid
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
-  expiresAt   DateTime @db.Timestamptz(6)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String?           @db.Uuid
+  createdAt   DateTime          @default(now()) @db.Timestamptz(6)
+  completedAt DateTime?         @db.Timestamptz(6)
+  expiresAt   DateTime          @db.Timestamptz(6)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, route, key])
+  @@index([status, createdAt])
   @@index([expiresAt])
   @@map("idempotency_records")
 }
 
 model WebhookInbox {
-  id              String    @id @default(uuid()) @db.Uuid
-  provider        String    @db.VarChar(60)
-  externalEventId String    @db.VarChar(255)
-  payloadHash     String    @db.Char(64)
-  receivedAt      DateTime  @default(now()) @db.Timestamptz(6)
-  processedAt     DateTime? @db.Timestamptz(6)
-  status          String    @default("RECEIVED") @db.VarChar(30)
-  failureCode     String?   @db.VarChar(100)
+  id               String      @id @default(uuid()) @db.Uuid
+  provider         String      @db.VarChar(60)
+  externalEventId  String      @db.VarChar(255)
+  payloadHash      String      @db.Char(64)
+  payloadEncrypted Bytes
+  encryptionKeyId  String      @db.VarChar(80)
+  schemaVersion    Int         @default(1)
+  status           InboxStatus @default(RECEIVED)
+  attempts         Int         @default(0)
+  nextAttemptAt    DateTime    @default(now()) @db.Timestamptz(6)
+  lockedAt         DateTime?   @db.Timestamptz(6)
+  lockedBy         String?     @db.VarChar(120)
+  receivedAt       DateTime    @default(now()) @db.Timestamptz(6)
+  processedAt      DateTime?   @db.Timestamptz(6)
+  failureCode      String?     @db.VarChar(100)
 
   @@unique([provider, externalEventId])
-  @@index([status, receivedAt])
+  @@index([status, nextAttemptAt, receivedAt])
+  @@index([lockedAt])
   @@map("webhook_inbox")
 }
 
@@ -1396,12 +1422,67 @@ model OutboxEvent {
   occurredAt       DateTime  @default(now()) @db.Timestamptz(6)
   publishedAt      DateTime? @db.Timestamptz(6)
   publishAttempts  Int       @default(0)
+  nextAttemptAt    DateTime  @default(now()) @db.Timestamptz(6)
+  lockedAt         DateTime? @db.Timestamptz(6)
+  lockedBy         String?   @db.VarChar(120)
+  failureCode      String?   @db.VarChar(100)
+  deadLetteredAt   DateTime? @db.Timestamptz(6)
   user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([aggregateType, aggregateId, aggregateVersion, eventType])
-  @@index([publishedAt, occurredAt, id])
+  @@index([publishedAt, nextAttemptAt, occurredAt, id])
+  @@index([lockedAt])
   @@index([userId, occurredAt])
   @@map("outbox_events")
+}
+
+model BackgroundJob {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String?   @db.Uuid
+  queue            String    @db.VarChar(80)
+  type             String    @db.VarChar(120)
+  deduplicationKey String?   @db.VarChar(200)
+  status           JobStatus @default(QUEUED)
+  payload          Json
+  result           Json?
+  schemaVersion    Int       @default(1)
+  attempts         Int       @default(0)
+  maxAttempts      Int       @default(5)
+  availableAt      DateTime  @default(now()) @db.Timestamptz(6)
+  lockedAt         DateTime? @db.Timestamptz(6)
+  lockedBy         String?   @db.VarChar(120)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6)
+  startedAt        DateTime? @db.Timestamptz(6)
+  completedAt      DateTime? @db.Timestamptz(6)
+  expiresAt        DateTime? @db.Timestamptz(6)
+  failureCode      String?   @db.VarChar(100)
+  user             User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([queue, deduplicationKey])
+  @@index([queue, status, availableAt, createdAt])
+  @@index([lockedAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("background_jobs")
+}
+
+model MetricDefinition {
+  id            String    @id @default(uuid()) @db.Uuid
+  key           String    @db.VarChar(120)
+  version       Int
+  name          String    @db.VarChar(160)
+  description   String    @db.Text
+  unit          String    @db.VarChar(40)
+  rule          Json
+  active        Boolean   @default(true)
+  effectiveFrom DateTime  @default(now()) @db.Timestamptz(6)
+  retiredAt     DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([key, version])
+  @@index([active, key])
+  @@map("metric_definitions")
 }
 
 model AuditEvent {
