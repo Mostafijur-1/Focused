@@ -1,0 +1,31 @@
+{
+  "name": "focused",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Focused — a Bangla-first Focus Operating System.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @focused/web dev",
+    "build": "pnpm --filter @focused/web build",
+    "start": "pnpm --filter @focused/web start",
+    "lint": "pnpm --filter @focused/web lint",
+    "lint:fix": "pnpm --filter @focused/web lint:fix",
+    "typecheck": "pnpm --filter @focused/web typecheck",
+    "test": "pnpm --filter @focused/web test",
+    "test:coverage": "pnpm --filter @focused/web test:coverage",
+    "test:e2e": "pnpm --filter @focused/web test:e2e",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "api:lint": "redocly lint api/openapi.yaml",
+    "quality": "pnpm format && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm api:lint && pnpm build"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.43.2",
+    "prettier": "3.9.6",
+    "prettier-plugin-tailwindcss": "0.8.1"
+  }
+}

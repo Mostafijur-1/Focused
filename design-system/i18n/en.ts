@@ -39,16 +39,21 @@ export const en = {
   landing: {
     eyebrow: "Your personal FocusOS",
     title: "Protect your attention. Move forward every day.",
-    subtitle: "Focused brings planning, Focus Sessions, habits, and progress together—while an AI coach helps you identify the next useful step.",
+    subtitle:
+      "Focused brings planning, Focus Sessions, habits, and progress together—while an AI coach helps you identify the next useful step.",
     primaryCta: "Start for free",
     secondaryCta: "See how it works",
-    trust: "No unnecessary pressure—just clear priorities, deep work, and steady improvement.",
+    trust:
+      "No unnecessary pressure—just clear priorities, deep work, and steady improvement.",
     featureFocusTitle: "Work deeply",
-    featureFocusBody: "Start a Timer, reduce interruptions, and record the outcome of every Focus Session.",
+    featureFocusBody:
+      "Start a Timer, reduce interruptions, and record the outcome of every Focus Session.",
     featurePlanTitle: "Plan a realistic day",
-    featurePlanBody: "Choose work within your capacity, prioritize what matters, and move unfinished work intentionally.",
+    featurePlanBody:
+      "Choose work within your capacity, prioritize what matters, and move unfinished work intentionally.",
     featureCoachTitle: "Think with your AI coach",
-    featureCoachBody: "Get suggestions, reviews, and next steps based only on information you explicitly allow.",
+    featureCoachBody:
+      "Get suggestions, reviews, and next steps based only on information you explicitly allow.",
   },
   dashboard: {
     greetingMorning: "Good morning, {name}",
@@ -60,9 +65,11 @@ export const en = {
     focusedMinutes: "Focused time",
     currentStreak: "Current streak",
     weeklyProgress: "This week’s progress",
-    coachPrompt: "What feels blocked today? Think it through with your AI coach.",
+    coachPrompt:
+      "What feels blocked today? Think it through with your AI coach.",
     noPriorityTitle: "No priority has been chosen for today",
-    noPriorityBody: "Choosing one important task makes the remaining decisions easier.",
+    noPriorityBody:
+      "Choosing one important task makes the remaining decisions easier.",
   },
   daily: {
     title: "Today’s plan",
@@ -121,11 +128,13 @@ export const en = {
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "Use device setting",
-    banglaQualityNote: "Bangla copy is human-authored and is never machine-translated.",
+    banglaQualityNote:
+      "Bangla copy is human-authored and is never machine-translated.",
   },
   admin: {
     title: "Administration",
-    subtitle: "View safe operational information, never private member writing.",
+    subtitle:
+      "View safe operational information, never private member writing.",
     systemHealth: "System health",
     users: "User management",
     roles: "Roles and permissions",
@@ -162,6 +171,7 @@ export const en = {
     required: "This information is required",
     invalidEmail: "Enter a valid email address",
     tooLong: "This text is longer than the allowed limit",
-    conflict: "This information changed on another device. Review the latest version and try again.",
+    conflict:
+      "This information changed on another device. Review the latest version and try again.",
   },
 } satisfies FocusedMessages;

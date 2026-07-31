@@ -25,7 +25,8 @@ export const focusedTokens = {
     large: 52,
   },
   typography: {
-    family: '"Inter Variable", "Noto Sans Bengali Variable", "Noto Sans Bengali", system-ui, sans-serif',
+    family:
+      '"Inter Variable", "Noto Sans Bengali Variable", "Noto Sans Bengali", system-ui, sans-serif',
     banglaLineHeight: 1.62,
     latinLineHeight: 1.5,
     scale: {

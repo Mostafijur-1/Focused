@@ -1,0 +1,23 @@
+{
+  "name": "@focused/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "sideEffects": [
+    "./tokens.css"
+  ],
+  "exports": {
+    ".": "./index.ts",
+    "./tokens.css": "./tokens.css",
+    "./tokens": "./tokens.ts",
+    "./i18n/bn-BD": "./i18n/bn-BD.ts",
+    "./i18n/en": "./i18n/en.ts"
+  },
+  "peerDependencies": {
+    "shadcn": "^4.16.0",
+    "tailwindcss": "^4.3.0"
+  },
+  "devDependencies": {
+    "shadcn": "4.16.0",
+    "tailwindcss": "4.3.3"
+  }
+}
