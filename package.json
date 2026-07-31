@@ -13,7 +13,6 @@
     "db:validate": "prisma validate",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
-    "prebuild": "corepack pnpm db:generate",
     "dev": "corepack pnpm --filter @focused/web dev",
     "build": "corepack pnpm --filter @focused/web build",
     "start": "corepack pnpm --filter @focused/web start",

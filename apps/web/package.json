@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "corepack pnpm --dir ../.. db:generate",
     "build": "next build",
     "postbuild": "node scripts/prepare-standalone.mjs",
     "start": "node .next/standalone/apps/web/server.js",
