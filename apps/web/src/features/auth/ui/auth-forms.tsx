@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -50,7 +51,7 @@ export function SignInForm({ locale }: { readonly locale: Locale }) {
     setFormError(null);
     try {
       await auth.signIn(values.email, values.password);
-      router.replace(`/${locale}/security`);
+      router.replace(`/${locale}/dashboard` as Route);
     } catch (error) {
       setFormError(errorMessage(error, copy.unexpected, copy.offline));
     }
@@ -423,7 +424,7 @@ export function AuthComplete({ locale }: { readonly locale: Locale }) {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     void refresh().then((session) => {
-      if (session) router.replace(`/${locale}/security`);
+      if (session) router.replace(`/${locale}/dashboard` as Route);
       else setError(copy.sessionExpired);
     });
   }, [copy.sessionExpired, locale, refresh, router]);
