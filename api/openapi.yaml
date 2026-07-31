@@ -27,6 +27,8 @@ tags:
     description: Identity, OAuth, access tokens, refresh rotation, and session lifecycle.
   - name: Profile
     description: Member-owned profile, locale, time-zone, and preference resources.
+  - name: Dashboard
+    description: Owner-scoped, privacy-filtered Dashboard projections and widget preferences.
   - name: Daily Focus
     description: Daily commitments, capacity, and close-out decisions.
   - name: Focus Sessions
@@ -76,6 +78,59 @@ paths:
                   timestamp: { type: string, format: date-time }
         "429": { $ref: "#/components/responses/RateLimited" }
         "500": { $ref: "#/components/responses/InternalError" }
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Read the current member Dashboard
+      operationId: getDashboard
+      description: Returns a bounded, privacy-filtered projection for the member-local day. Stale and partially degraded data is disclosed explicitly.
+      responses:
+        "200":
+          description: Current or safely degraded Dashboard projection
+          headers:
+            Cache-Control:
+              schema: { type: string, const: "private, no-store" }
+            Vary:
+              schema: { type: string, const: Authorization }
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/DashboardSnapshot" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /dashboard/widgets:
+    patch:
+      tags: [Dashboard]
+      summary: Update Dashboard widget visibility and order
+      operationId: updateDashboardWidgets
+      description: Uses optimistic concurrency. The primary Focus widget must remain visible and first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/UpdateDashboardWidgetsRequest" }
+      responses:
+        "200":
+          description: Updated widget layout
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/DashboardWidgetLayout" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/register:
     post:
       tags: [Authentication]
@@ -1047,6 +1102,215 @@ components:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
   schemas:
+    DashboardWidgetKey:
+      type: string
+      enum:
+        [
+          today_focus,
+          active_session,
+          weekly_progress,
+          habits,
+          goals,
+          reminders,
+          ai_coach,
+        ]
+    DashboardWidgetSetting:
+      type: object
+      additionalProperties: false
+      required: [key, visible]
+      properties:
+        key: { $ref: "#/components/schemas/DashboardWidgetKey" }
+        visible: { type: boolean }
+    DashboardWidgetLayout:
+      type: object
+      additionalProperties: false
+      required: [version, widgets]
+      properties:
+        version: { type: integer, minimum: 1 }
+        widgets:
+          type: array
+          minItems: 7
+          maxItems: 7
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/DashboardWidgetSetting" }
+    UpdateDashboardWidgetsRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, widgets]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        widgets:
+          type: array
+          minItems: 7
+          maxItems: 7
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/DashboardWidgetSetting" }
+    DashboardDegradation:
+      type: object
+      additionalProperties: false
+      required: [source, code]
+      properties:
+        source:
+          type: string
+          enum:
+            [
+              today_focus,
+              focus_sessions,
+              weekly_progress,
+              habits,
+              goals,
+              reminders,
+              projection_persistence,
+            ]
+        code:
+          type: string
+          enum: [source_unavailable, projection_not_persisted]
+    DashboardPriority:
+      type: object
+      additionalProperties: false
+      required: [id, title, status]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        title: { type: string }
+        status: { type: string, enum: [planned, in_progress, completed] }
+    DashboardTodayFocus:
+      type: object
+      additionalProperties: false
+      required: [state, priorities, completedCount, totalCount]
+      properties:
+        state: { type: string, enum: [ready, empty, unavailable] }
+        priorities:
+          type: array
+          maxItems: 3
+          items: { $ref: "#/components/schemas/DashboardPriority" }
+        completedCount: { type: integer, minimum: 0 }
+        totalCount: { type: integer, minimum: 0, maximum: 3 }
+    DashboardFocusSession:
+      type: object
+      additionalProperties: false
+      required: [state, session]
+      properties:
+        state: { type: string, enum: [active, not_configured, unavailable] }
+        session:
+          oneOf:
+            - type: "null"
+            - type: object
+              additionalProperties: false
+              required: [id, intent, kind, status, plannedSeconds, startedAt]
+              properties:
+                id: { $ref: "#/components/schemas/Uuid" }
+                intent: { type: string }
+                kind: { type: string, enum: [deep_work, pomodoro, custom] }
+                status: { type: string, enum: [running, paused] }
+                plannedSeconds: { type: integer, minimum: 1 }
+                startedAt: { type: string, format: date-time }
+    DashboardWeeklyProgress:
+      type: object
+      additionalProperties: false
+      required: [state, completedPriorities, totalPriorities, focusedSeconds]
+      properties:
+        state: { type: string, enum: [ready, empty, unavailable] }
+        completedPriorities: { type: integer, minimum: 0 }
+        totalPriorities: { type: integer, minimum: 0 }
+        focusedSeconds: { type: integer, minimum: 0 }
+    DashboardHabitSummary:
+      type: object
+      additionalProperties: false
+      required: [state, completedCount, dueCount]
+      properties:
+        state: { type: string, enum: [ready, not_configured, unavailable] }
+        completedCount: { type: integer, minimum: 0, maximum: 50 }
+        dueCount: { type: integer, minimum: 0, maximum: 50 }
+    DashboardGoalSummary:
+      type: object
+      additionalProperties: false
+      required: [state, activeCount, nextGoal]
+      properties:
+        state: { type: string, enum: [ready, not_configured, unavailable] }
+        activeCount: { type: integer, minimum: 0 }
+        nextGoal:
+          oneOf:
+            - type: "null"
+            - type: object
+              additionalProperties: false
+              required: [id, title]
+              properties:
+                id: { $ref: "#/components/schemas/Uuid" }
+                title: { type: string }
+    DashboardReminderSummary:
+      type: object
+      additionalProperties: false
+      required: [state, dueCount, nextReminder]
+      properties:
+        state: { type: string, enum: [ready, not_configured, unavailable] }
+        dueCount: { type: integer, minimum: 0 }
+        nextReminder:
+          oneOf:
+            - type: "null"
+            - type: object
+              additionalProperties: false
+              required: [id, title, scheduledFor]
+              properties:
+                id: { $ref: "#/components/schemas/Uuid" }
+                title: { type: string }
+                scheduledFor: { type: string, format: date-time }
+    DashboardData:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          displayName,
+          todayFocus,
+          focusSession,
+          weeklyProgress,
+          habits,
+          goals,
+          reminders,
+          aiCoach,
+        ]
+      properties:
+        displayName: { type: string }
+        todayFocus: { $ref: "#/components/schemas/DashboardTodayFocus" }
+        focusSession: { $ref: "#/components/schemas/DashboardFocusSession" }
+        weeklyProgress: { $ref: "#/components/schemas/DashboardWeeklyProgress" }
+        habits: { $ref: "#/components/schemas/DashboardHabitSummary" }
+        goals: { $ref: "#/components/schemas/DashboardGoalSummary" }
+        reminders: { $ref: "#/components/schemas/DashboardReminderSummary" }
+        aiCoach:
+          type: object
+          additionalProperties: false
+          required: [state]
+          properties:
+            state: { type: string, const: coming_soon }
+    DashboardSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          schemaVersion,
+          localDate,
+          timeZone,
+          computedAt,
+          sourceThrough,
+          staleAfter,
+          freshness,
+          data,
+          layout,
+          degradations,
+        ]
+      properties:
+        schemaVersion: { type: integer, const: 1 }
+        localDate: { type: string, format: date }
+        timeZone: { type: string, maxLength: 80 }
+        computedAt: { type: string, format: date-time }
+        sourceThrough: { type: string, format: date-time }
+        staleAfter: { type: string, format: date-time }
+        freshness: { type: string, enum: [fresh, stale] }
+        data: { $ref: "#/components/schemas/DashboardData" }
+        layout: { $ref: "#/components/schemas/DashboardWidgetLayout" }
+        degradations:
+          type: array
+          items: { $ref: "#/components/schemas/DashboardDegradation" }
     Uuid:
       type: string
       format: uuid

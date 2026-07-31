@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 
 import { AppError } from "@/lib/errors/app-error";
 import { apiFailure, apiSuccess } from "@/lib/http/api-response";
+import { parseJson } from "@/lib/http/api-route";
 import { createRequestContext } from "@/lib/http/request-context";
 
 describe("request context", () => {
@@ -53,5 +56,37 @@ describe("API responses", () => {
     expect(response.headers.get("content-type")).toContain(
       "application/problem+json",
     );
+  });
+});
+
+describe("API JSON parsing", () => {
+  const schema = z.object({ count: z.number().int().positive() }).strict();
+
+  it("returns validated request data", async () => {
+    const request = new NextRequest("https://focused.test/api", {
+      method: "POST",
+      body: JSON.stringify({ count: 2 }),
+    });
+
+    await expect(parseJson(request, schema)).resolves.toEqual({ count: 2 });
+  });
+
+  it("rejects malformed JSON and schema violations safely", async () => {
+    const malformed = new NextRequest("https://focused.test/api", {
+      method: "POST",
+      body: "{",
+    });
+    const invalid = new NextRequest("https://focused.test/api", {
+      method: "POST",
+      body: JSON.stringify({ count: 0, secret: "not accepted" }),
+    });
+
+    await expect(parseJson(malformed, schema)).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+    await expect(parseJson(invalid, schema)).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      status: 422,
+    });
   });
 });

@@ -6,6 +6,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "server-only": fileURLToPath(
+        new URL("./tests/server-only.ts", import.meta.url),
+      ),
     },
   },
   test: {
@@ -29,6 +32,9 @@ export default defineConfig({
         "src/features/auth/infrastructure/rate-limit/in-memory-auth-rate-limiter.ts",
         "src/features/auth/transport/auth-schemas.ts",
         "src/features/auth/transport/request-security.ts",
+        "src/features/dashboard/domain/**/*.ts",
+        "src/features/dashboard/application/**/*.ts",
+        "src/features/dashboard/transport/**/*.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {
