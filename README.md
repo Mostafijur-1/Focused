@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 and 2 establish the production foundation and Authentication boundary:
+Milestones 1 through 3 establish the production, Authentication, and PostgreSQL persistence foundations:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -19,6 +19,8 @@ Milestones 1 and 2 establish the production foundation and Authentication bounda
 - EdDSA access tokens, opaque rotating refresh tokens, replay-family revocation, and session controls
 - Google, GitHub, and Microsoft OAuth Authorization Code + server-owned PKCE adapters
 - PostgreSQL identity migration, Prisma/Neon runtime adapter, RBAC, audit events, CSRF/origin checks, and distributed rate-limit adapter
+- Complete product-data schema with ownership foreign keys, native invariants, partial hot-path indexes, and versioned configuration seed
+- Idempotency, transactional outbox helpers, encrypted webhook inbox, leased background jobs, migration drift checks, and PostgreSQL integration tests
 
 FocusOS business modules remain forward contracts until their approved milestones.
 
@@ -88,6 +90,8 @@ The complete Authentication variable catalog and key-generation instructions are
 | `pnpm api:lint`          | Validate the OpenAPI 3.1 contract               |
 | `pnpm db:validate`       | Validate the Prisma data model                  |
 | `pnpm db:migrate:deploy` | Apply committed migrations safely               |
+| `pnpm db:migrate:status` | Verify applied migration state                  |
+| `pnpm db:drift:check`    | Detect non-allow-listed schema drift            |
 | `pnpm format`            | Verify Prettier formatting                      |
 | `pnpm quality`           | Run the complete non-browser local quality gate |
 
@@ -148,7 +152,7 @@ The container runs as a non-root user, exposes port 3000, includes a health chec
 ## Vercel deployment
 
 1. Import the GitHub repository into Vercel.
-2. Keep the repository root as the project root; `vercel.json` builds the `apps/web` workspace.
+2. Set the Vercel project Root Directory to `apps/web`; the repository `vercel.json` paths are relative to that root.
 3. Set `NEXT_PUBLIC_APP_URL` to the production HTTPS URL.
 4. Deploy a preview and verify both locales, security headers, metadata, manifest, health, and Playwright smoke tests.
 5. Protect production promotion with the GitHub quality gate.
@@ -174,6 +178,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Production Architecture](docs/Focused_Production_Architecture.md)
 - [UI/UX Design System](docs/Focused_UI_UX_Design_System.md)
 - [Implementation Roadmap](docs/Focused_Implementation_Roadmap.md)
+- [Database Foundation](docs/database.md)
 
 ## Contribution workflow
 
