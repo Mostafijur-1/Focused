@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
-  transpilePackages: ["@focused/design-system"],
+  transpilePackages: ["@focused/database", "@focused/design-system"],
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },

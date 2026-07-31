@@ -5,6 +5,10 @@ export type AppErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
+  | "AUTH_INVALID_CREDENTIALS"
+  | "AUTH_EMAIL_NOT_VERIFIED"
+  | "AUTH_TOKEN_INVALID"
+  | "DEPENDENCY_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 const statusByCode: Readonly<Record<AppErrorCode, number>> = {
@@ -14,6 +18,10 @@ const statusByCode: Readonly<Record<AppErrorCode, number>> = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   RATE_LIMITED: 429,
+  AUTH_INVALID_CREDENTIALS: 401,
+  AUTH_EMAIL_NOT_VERIFIED: 403,
+  AUTH_TOKEN_INVALID: 400,
+  DEPENDENCY_UNAVAILABLE: 503,
   INTERNAL_ERROR: 500,
 };
 

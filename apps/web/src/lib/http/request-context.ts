@@ -5,14 +5,16 @@ export interface RequestContext {
   readonly startedAt: number;
 }
 
-export function createRequestContext(request: Request): RequestContext {
-  const candidate = request.headers.get("x-request-id")?.trim();
+export function getRequestId(headers: Headers): string {
+  const candidate = headers.get("x-request-id")?.trim();
+  return candidate && requestIdPattern.test(candidate)
+    ? candidate
+    : crypto.randomUUID();
+}
 
+export function createRequestContext(request: Request): RequestContext {
   return {
-    requestId:
-      candidate && requestIdPattern.test(candidate)
-        ? candidate
-        : crypto.randomUUID(),
+    requestId: getRequestId(request.headers),
     startedAt: Date.now(),
   };
 }

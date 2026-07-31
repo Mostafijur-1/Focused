@@ -9,6 +9,23 @@ const serverEnvironmentSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   VERCEL_GIT_COMMIT_SHA: z.string().trim().min(7).max(64).optional(),
+  DATABASE_URL: z.string().min(1).optional(),
+  AUTH_JWT_PRIVATE_KEY_BASE64: z.string().min(1).optional(),
+  AUTH_JWT_PUBLIC_KEY_BASE64: z.string().min(1).optional(),
+  AUTH_JWT_KEY_ID: z.string().trim().min(1).max(80).default("focused-local-1"),
+  AUTH_JWT_ISSUER: z.url().optional(),
+  AUTH_JWT_AUDIENCE: z.string().trim().min(1).max(120).default("focused-api"),
+  AUTH_DATA_ENCRYPTION_KEY_BASE64: z.string().min(1).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  AUTH_EMAIL_FROM: z.string().trim().min(3).max(320).optional(),
+  UPSTASH_REDIS_REST_URL: z.url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+  GITHUB_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  GITHUB_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+  MICROSOFT_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  MICROSOFT_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
@@ -25,6 +42,24 @@ export function getServerEnvironment(): ServerEnvironment {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     LOG_LEVEL: process.env.LOG_LEVEL,
     VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA,
+    DATABASE_URL: process.env.DATABASE_URL,
+    AUTH_JWT_PRIVATE_KEY_BASE64: process.env.AUTH_JWT_PRIVATE_KEY_BASE64,
+    AUTH_JWT_PUBLIC_KEY_BASE64: process.env.AUTH_JWT_PUBLIC_KEY_BASE64,
+    AUTH_JWT_KEY_ID: process.env.AUTH_JWT_KEY_ID,
+    AUTH_JWT_ISSUER: process.env.AUTH_JWT_ISSUER,
+    AUTH_JWT_AUDIENCE: process.env.AUTH_JWT_AUDIENCE,
+    AUTH_DATA_ENCRYPTION_KEY_BASE64:
+      process.env.AUTH_DATA_ENCRYPTION_KEY_BASE64,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
+    GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    GITHUB_OAUTH_CLIENT_ID: process.env.GITHUB_OAUTH_CLIENT_ID,
+    GITHUB_OAUTH_CLIENT_SECRET: process.env.GITHUB_OAUTH_CLIENT_SECRET,
+    MICROSOFT_OAUTH_CLIENT_ID: process.env.MICROSOFT_OAUTH_CLIENT_ID,
+    MICROSOFT_OAUTH_CLIENT_SECRET: process.env.MICROSOFT_OAUTH_CLIENT_SECRET,
   });
 
   if (!result.success) {

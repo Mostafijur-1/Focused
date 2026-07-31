@@ -4,6 +4,7 @@
 # JavaScript / Next.js
 node_modules/
 .pnpm-store/
+packages/platform/database/generated/
 .next/
 out/
 coverage/

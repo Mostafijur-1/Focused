@@ -9,23 +9,29 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @focused/web dev",
-    "build": "pnpm --filter @focused/web build",
-    "start": "pnpm --filter @focused/web start",
-    "lint": "pnpm --filter @focused/web lint",
-    "lint:fix": "pnpm --filter @focused/web lint:fix",
-    "typecheck": "pnpm --filter @focused/web typecheck",
-    "test": "pnpm --filter @focused/web test",
-    "test:coverage": "pnpm --filter @focused/web test:coverage",
-    "test:e2e": "pnpm --filter @focused/web test:e2e",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "prebuild": "corepack pnpm db:generate",
+    "dev": "corepack pnpm --filter @focused/web dev",
+    "build": "corepack pnpm --filter @focused/web build",
+    "start": "corepack pnpm --filter @focused/web start",
+    "lint": "corepack pnpm --filter @focused/web lint",
+    "lint:fix": "corepack pnpm --filter @focused/web lint:fix",
+    "typecheck": "corepack pnpm --filter @focused/web typecheck",
+    "test": "corepack pnpm --filter @focused/web test",
+    "test:coverage": "corepack pnpm --filter @focused/web test:coverage",
+    "test:e2e": "corepack pnpm --filter @focused/web test:e2e",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "api:lint": "redocly lint api/openapi.yaml",
-    "quality": "pnpm format && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm api:lint && pnpm build"
+    "quality": "corepack pnpm db:validate && corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test:coverage && corepack pnpm api:lint && corepack pnpm build"
   },
   "devDependencies": {
     "@redocly/cli": "2.43.2",
     "prettier": "3.9.6",
-    "prettier-plugin-tailwindcss": "0.8.1"
+    "prettier-plugin-tailwindcss": "0.8.1",
+    "prisma": "7.9.1"
   }
 }

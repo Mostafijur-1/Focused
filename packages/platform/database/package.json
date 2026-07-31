@@ -1,0 +1,16 @@
+{
+  "name": "@focused/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/client.ts",
+    "./generated/client": "./generated/client.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.1.0",
+    "@prisma/adapter-neon": "7.9.1",
+    "@prisma/client": "7.9.1"
+  }
+}

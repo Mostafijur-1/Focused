@@ -29,6 +29,11 @@ enum ConsentStatus {
   WITHDRAWN
 }
 
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum PlanType {
   DAILY
   WEEKLY
@@ -207,6 +212,7 @@ model User {
   email             String     @unique @db.Citext
   emailVerifiedAt   DateTime?  @db.Timestamptz(6)
   passwordHash      String?
+  passwordChangedAt DateTime?  @db.Timestamptz(6)
   status            UserStatus @default(PENDING_VERIFICATION)
   permissionVersion Int        @default(1)
   createdAt         DateTime   @default(now()) @db.Timestamptz(6)
@@ -216,8 +222,10 @@ model User {
 
   profile                UserProfile?
   oauthAccounts          OAuthAccount[]
+  oauthTransactions      OAuthTransaction[]
   sessions               AuthSession[]
   refreshTokens          RefreshToken[]
+  authTokens             AuthOneTimeToken[]
   roles                  UserRole[]
   consents               Consent[]
   preferences            UserPreference[]
@@ -296,24 +304,65 @@ model OAuthAccount {
   @@map("oauth_accounts")
 }
 
+model OAuthTransaction {
+  id                    String    @id @default(uuid()) @db.Uuid
+  initiatedByUserId     String?   @db.Uuid
+  provider              String    @db.VarChar(50)
+  stateHash             String    @unique @db.Char(64)
+  nonceHash             String?   @db.Char(64)
+  nonceEncrypted        Bytes?
+  codeVerifierEncrypted Bytes
+  redirectUri           String    @db.VarChar(500)
+  returnTo              String    @db.VarChar(500)
+  locale                String    @db.VarChar(20)
+  timeZone              String    @db.VarChar(80)
+  expiresAt             DateTime  @db.Timestamptz(6)
+  consumedAt            DateTime? @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  initiatedBy           User?     @relation(fields: [initiatedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([provider, expiresAt])
+  @@index([initiatedByUserId, createdAt(sort: Desc)])
+  @@map("oauth_transactions")
+}
+
 model AuthSession {
-  id            String         @id @default(uuid()) @db.Uuid
-  userId        String         @db.Uuid
-  status        SessionStatus  @default(ACTIVE)
-  deviceName    String?        @db.VarChar(120)
-  userAgentHash String?        @db.VarChar(128)
-  ipPrefix      String?        @db.VarChar(64)
-  lastSeenAt    DateTime       @default(now()) @db.Timestamptz(6)
-  expiresAt     DateTime       @db.Timestamptz(6)
-  revokedAt     DateTime?      @db.Timestamptz(6)
-  revokeReason  String?        @db.VarChar(80)
-  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshTokens RefreshToken[]
+  id              String         @id @default(uuid()) @db.Uuid
+  userId          String         @db.Uuid
+  status          SessionStatus  @default(ACTIVE)
+  deviceName      String?        @db.VarChar(120)
+  userAgentHash   String?        @db.VarChar(128)
+  ipPrefix        String?        @db.VarChar(64)
+  authMethod      String         @db.VarChar(40)
+  authenticatedAt DateTime       @default(now()) @db.Timestamptz(6)
+  mfaVerifiedAt   DateTime?      @db.Timestamptz(6)
+  lastSeenAt      DateTime       @default(now()) @db.Timestamptz(6)
+  expiresAt       DateTime       @db.Timestamptz(6)
+  revokedAt       DateTime?      @db.Timestamptz(6)
+  revokeReason    String?        @db.VarChar(80)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens   RefreshToken[]
 
   @@index([userId, status])
   @@index([expiresAt])
   @@map("auth_sessions")
+}
+
+model AuthOneTimeToken {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @db.Uuid
+  purpose           AuthTokenPurpose
+  tokenHash         String           @unique @db.Char(64)
+  requestedIpPrefix String?          @db.VarChar(64)
+  expiresAt         DateTime         @db.Timestamptz(6)
+  consumedAt        DateTime?        @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("auth_one_time_tokens")
 }
 
 model RefreshToken {

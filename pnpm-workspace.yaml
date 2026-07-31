@@ -1,8 +1,12 @@
 packages:
   - "apps/*"
   - "design-system"
+  - "packages/*/*"
 
 allowBuilds:
+  "@node-rs/argon2": true
+  "@prisma/engines": true
+  prisma: true
   sharp: true
   unrs-resolver: true
 
