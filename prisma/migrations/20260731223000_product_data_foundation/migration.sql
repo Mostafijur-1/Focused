@@ -1456,6 +1456,60 @@ ALTER TABLE "outbox_events" ADD CONSTRAINT "outbox_events_userId_fkey" FOREIGN K
 -- AddForeignKey
 ALTER TABLE "background_jobs" ADD CONSTRAINT "background_jobs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- Reconcile the hand-written Milestone 2 baseline with the canonical Prisma model.
+-- Prisma generates UUIDs in the client, and every modeled relation uses ON UPDATE CASCADE.
+ALTER TABLE "users" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "oauth_accounts" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "oauth_transactions" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "auth_sessions" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "auth_one_time_tokens" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "refresh_tokens" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "roles" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "permissions" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "consents" ALTER COLUMN "id" DROP DEFAULT;
+ALTER TABLE "audit_events" ALTER COLUMN "id" DROP DEFAULT;
+
+ALTER TABLE "user_profiles"
+  DROP CONSTRAINT "user_profiles_userId_fkey",
+  ADD CONSTRAINT "user_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "oauth_accounts"
+  DROP CONSTRAINT "oauth_accounts_userId_fkey",
+  ADD CONSTRAINT "oauth_accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "oauth_transactions"
+  DROP CONSTRAINT "oauth_transactions_initiatedByUserId_fkey",
+  ADD CONSTRAINT "oauth_transactions_initiatedByUserId_fkey" FOREIGN KEY ("initiatedByUserId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "auth_sessions"
+  DROP CONSTRAINT "auth_sessions_userId_fkey",
+  ADD CONSTRAINT "auth_sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "auth_one_time_tokens"
+  DROP CONSTRAINT "auth_one_time_tokens_userId_fkey",
+  ADD CONSTRAINT "auth_one_time_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "refresh_tokens"
+  DROP CONSTRAINT "refresh_tokens_userId_fkey",
+  ADD CONSTRAINT "refresh_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  DROP CONSTRAINT "refresh_tokens_sessionId_fkey",
+  ADD CONSTRAINT "refresh_tokens_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "auth_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  DROP CONSTRAINT "refresh_tokens_parentId_fkey",
+  ADD CONSTRAINT "refresh_tokens_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "refresh_tokens"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  DROP CONSTRAINT "refresh_tokens_replacedById_fkey",
+  ADD CONSTRAINT "refresh_tokens_replacedById_fkey" FOREIGN KEY ("replacedById") REFERENCES "refresh_tokens"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "user_roles"
+  DROP CONSTRAINT "user_roles_userId_fkey",
+  ADD CONSTRAINT "user_roles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  DROP CONSTRAINT "user_roles_roleId_fkey",
+  ADD CONSTRAINT "user_roles_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "roles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "role_permissions"
+  DROP CONSTRAINT "role_permissions_roleId_fkey",
+  ADD CONSTRAINT "role_permissions_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "roles"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  DROP CONSTRAINT "role_permissions_permissionId_fkey",
+  ADD CONSTRAINT "role_permissions_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "consents"
+  DROP CONSTRAINT "consents_userId_fkey",
+  ADD CONSTRAINT "consents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "audit_events"
+  DROP CONSTRAINT "audit_events_actorUserId_fkey",
+  ADD CONSTRAINT "audit_events_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
 -- Domain invariants Prisma cannot express.
 ALTER TABLE "calendar_events"
   ADD CONSTRAINT "calendar_events_time_range_check" CHECK ("endsAt" > "startsAt");
