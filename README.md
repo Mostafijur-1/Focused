@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 through 3 establish the production, Authentication, and PostgreSQL persistence foundations:
+Milestones 1 through 4 establish the production, Authentication, PostgreSQL persistence, and Dashboard foundations:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -21,8 +21,10 @@ Milestones 1 through 3 establish the production, Authentication, and PostgreSQL 
 - PostgreSQL identity migration, Prisma/Neon runtime adapter, RBAC, audit events, CSRF/origin checks, and distributed rate-limit adapter
 - Complete product-data schema with ownership foreign keys, native invariants, partial hot-path indexes, and versioned configuration seed
 - Idempotency, transactional outbox helpers, encrypted webhook inbox, leased background jobs, migration drift checks, and PostgreSQL integration tests
+- Owner-scoped Dashboard projections with bounded source queries, explicit freshness, partial degradation, and replay-safe invalidation
+- A Bangla-first responsive Dashboard with one primary Focus action, widget personalization, offline current-tab fallback, and accessible mobile/tablet/desktop navigation
 
-FocusOS business modules remain forward contracts until their approved milestones.
+Later FocusOS business modules remain forward contracts until their approved milestones.
 
 ## Architecture
 
@@ -179,6 +181,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [UI/UX Design System](docs/Focused_UI_UX_Design_System.md)
 - [Implementation Roadmap](docs/Focused_Implementation_Roadmap.md)
 - [Database Foundation](docs/database.md)
+- [Dashboard Architecture and Operations](docs/dashboard.md)
 
 ## Contribution workflow
 
