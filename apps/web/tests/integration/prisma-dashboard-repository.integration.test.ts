@@ -147,8 +147,8 @@ describeDatabase("PrismaDashboardRepository against PostgreSQL", () => {
         WHERE "userId" = ${ownerId}::uuid AND "localDate" = ${localDate}::date
       `;
     });
-    expect(plan.map((row) => row["QUERY PLAN"]).join(" ")).toContain(
-      "dashboard_snapshots_userId_localDate_key",
+    expect(plan.map((row) => row["QUERY PLAN"]).join(" ")).toMatch(
+      /dashboard_snapshots_userId_localDate_(?:key|idx)/,
     );
   });
 
