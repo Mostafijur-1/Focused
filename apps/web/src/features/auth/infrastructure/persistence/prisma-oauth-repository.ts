@@ -197,6 +197,8 @@ function toAuthUser(user: UserWithAuthorization): AuthUser {
     emailVerifiedAt: user.emailVerifiedAt,
     status: user.status,
     permissionVersion: user.permissionVersion,
-    permissions: [...permissions].sort(),
+    permissions: [...permissions].sort((left, right) =>
+      left.localeCompare(right, "en"),
+    ),
   };
 }

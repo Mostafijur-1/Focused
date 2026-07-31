@@ -1531,7 +1531,7 @@ model DashboardProjectionCursor {
   version             Int       @default(1)
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([lastEventOccurredAt, lastEventId])
+  @@index([lastEventOccurredAt, lastEventId], map: "dashboard_projection_cursors_event_idx")
   @@map("dashboard_projection_cursors")
 }
 
