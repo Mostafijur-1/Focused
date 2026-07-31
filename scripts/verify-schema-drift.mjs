@@ -69,6 +69,11 @@ const nativeObjectNames = new Set([
   "outbox_events_ready_idx",
   "webhook_inbox_ready_idx",
   "background_jobs_ready_idx",
+  "dashboard_snapshots_freshness_check",
+  "dashboard_widget_preferences_version_check",
+  "dashboard_widget_preferences_layout_size_check",
+  "dashboard_projection_cursors_event_check",
+  "dashboard_projection_cursors_version_check",
 ]);
 
 const unexpected = statements.filter((statement) => {

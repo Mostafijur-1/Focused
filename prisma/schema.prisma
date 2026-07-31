@@ -277,7 +277,10 @@ model User {
   exportJobs             ExportJob[]
   idempotencyRecords     IdempotencyRecord[]
   backgroundJobs         BackgroundJob[]
-  auditEvents            AuditEvent[]            @relation("AuditActor")
+  dashboardSnapshots     DashboardSnapshot[]
+  dashboardWidgets       DashboardWidgetPreference[]
+  dashboardCursor        DashboardProjectionCursor?
+  auditEvents            AuditEvent[]                @relation("AuditActor")
   outboxEvents           OutboxEvent[]
 
   @@index([status, createdAt])
@@ -1483,6 +1486,53 @@ model MetricDefinition {
   @@unique([key, version])
   @@index([active, key])
   @@map("metric_definitions")
+}
+
+model DashboardSnapshot {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  localDate      DateTime @db.Date
+  timeZone       String   @db.VarChar(80)
+  payload        Json
+  schemaVersion  Int      @default(1)
+  sourceVersions Json     @default("{}")
+  degradations   Json     @default("[]")
+  computedAt     DateTime @db.Timestamptz(6)
+  sourceThrough  DateTime @db.Timestamptz(6)
+  staleAfter     DateTime @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+  version        Int      @default(1)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate])
+  @@index([userId, localDate(sort: Desc)])
+  @@index([staleAfter])
+  @@map("dashboard_snapshots")
+}
+
+model DashboardWidgetPreference {
+  userId    String   @id @db.Uuid
+  layout    Json
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  version   Int      @default(1)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("dashboard_widget_preferences")
+}
+
+model DashboardProjectionCursor {
+  userId              String    @id @db.Uuid
+  lastEventOccurredAt DateTime? @db.Timestamptz(6)
+  lastEventId         String?   @db.Uuid
+  reconciledAt        DateTime  @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(6)
+  version             Int       @default(1)
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([lastEventOccurredAt, lastEventId])
+  @@map("dashboard_projection_cursors")
 }
 
 model AuditEvent {
