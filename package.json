@@ -13,6 +13,7 @@
     "db:validate": "prisma validate",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
+    "db:drift:check": "node scripts/verify-schema-drift.mjs",
     "dev": "corepack pnpm --filter @focused/web dev",
     "build": "corepack pnpm --filter @focused/web build",
     "start": "corepack pnpm --filter @focused/web start",
