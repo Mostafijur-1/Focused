@@ -1,0 +1,16 @@
+flowchart LR
+  Primitive["Primitive tokens\ncolor · spacing · type · radius · motion"] --> Semantic["Semantic tokens\nprimary · surface · border · focus · status"]
+  Semantic --> Component["Component tokens\nbutton · card · field · chart · navigation"]
+  Component --> Pattern["Product patterns\nFocus Session · plan · review · AI proposal"]
+  Pattern --> Pages["Responsive pages\nBangla + English · light + dark"]
+
+  Policy["Accessibility + privacy + i18n policy"] --> Semantic
+  Policy --> Component
+  Policy --> Pattern
+
+  classDef brand fill:#ffe5f2,stroke:#e60076,color:#4f0029,stroke-width:2px;
+  classDef accent fill:#f3e8ff,stroke:#7c3aed,color:#32105f;
+  classDef neutral fill:#ffffff,stroke:#cfc7d5,color:#17131a;
+  class Semantic,Component brand;
+  class Policy accent;
+  class Primitive,Pattern,Pages neutral;

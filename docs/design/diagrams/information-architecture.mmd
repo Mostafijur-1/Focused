@@ -1,0 +1,26 @@
+flowchart TB
+  Public["Public experience"] --> Landing["Landing Page"]
+  Public --> Auth["Authentication"]
+
+  Auth --> Shell["Focused application shell"]
+  Shell --> Dashboard["Dashboard\norientation + one primary action"]
+  Shell --> Today["আজ\ndaily plan + Focus Session"]
+  Shell --> Week["সপ্তাহ\nreview + commitments + capacity"]
+  Shell --> Analytics["বিশ্লেষণ\ntrends + accessible data tables"]
+  Shell --> Knowledge["জ্ঞানভান্ডার\nnotes + resources + learning"]
+  Shell --> Profile["প্রোফাইল\nidentity + achievements + visibility"]
+  Shell --> Settings["সেটিংস\nlanguage + theme + privacy + accessibility"]
+
+  AdminAuth["Admin authorization"] --> Admin["প্রশাসন\noperations + roles + audit"]
+
+  Dashboard --> AI["AI coach surface"]
+  Today --> AI
+  Week --> AI
+  Analytics --> AI
+
+  classDef brand fill:#ffe5f2,stroke:#e60076,color:#4f0029,stroke-width:2px;
+  classDef accent fill:#f3e8ff,stroke:#7c3aed,color:#32105f;
+  classDef neutral fill:#ffffff,stroke:#cfc7d5,color:#17131a;
+  class Shell,Dashboard,Today brand;
+  class AI,Analytics,Week accent;
+  class Landing,Auth,Knowledge,Profile,Settings,Admin,Public,AdminAuth neutral;

@@ -1,0 +1,24 @@
+flowchart LR
+  subgraph Mobile["Mobile · 0–767 px"]
+    MTop["compact top bar"] --> MBody["single-column content"] --> MNav["5-item bottom navigation"]
+    MNav --> MMore["More opens bottom Sheet"]
+  end
+
+  subgraph Tablet["Tablet · 768–1023 px"]
+    TRail["72 px icon rail"] --> TBody["8-column adaptive grid"]
+    TBody --> TPanel["context panel as Sheet"]
+  end
+
+  subgraph Desktop["Desktop · 1024 px+"]
+    DSide["240 px collapsible sidebar"] --> DBody["12-column content grid"]
+    DBody --> DPanel["optional 320 px context / AI panel"]
+  end
+
+  Mobile -->|same information hierarchy| Tablet -->|same tasks and permissions| Desktop
+
+  classDef brand fill:#ffe5f2,stroke:#e60076,color:#4f0029,stroke-width:2px;
+  classDef accent fill:#f3e8ff,stroke:#7c3aed,color:#32105f;
+  classDef neutral fill:#ffffff,stroke:#cfc7d5,color:#17131a;
+  class MNav,TRail,DSide brand;
+  class MMore,TPanel,DPanel accent;
+  class MTop,MBody,TBody,DBody neutral;
