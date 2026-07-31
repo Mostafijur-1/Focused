@@ -1,0 +1,39 @@
+sequenceDiagram
+  autonumber
+  actor U as Member
+  participant UI as PWA
+  participant API as Focused API
+  participant DB as PostgreSQL
+  participant Q as QStash Scheduler / Queue
+  participant W as Notification Worker
+  participant Push as Browser Push Service
+  participant SW as Service Worker
+
+  U->>UI: Enable push for a category
+  UI->>U: Request browser permission in user gesture
+  U-->>UI: Grant
+  UI->>SW: register + PushManager.subscribe(VAPID)
+  SW-->>UI: endpoint + encryption keys
+  UI->>API: POST /api/v1/push-subscriptions
+  API->>DB: Store protected capability endpoint and keys
+
+  U->>API: Create recurring reminder
+  API->>DB: Save rule, timezone, quiet hours, and outbox event
+  API->>Q: Enqueue occurrence expansion
+  Q->>W: Signed job callback
+  W->>DB: Materialize bounded future occurrences idempotently
+  W->>Q: Schedule occurrence delivery
+
+  Q->>W: Deliver due occurrence (signed, retryable)
+  W->>DB: Lock occurrence and load preference snapshot
+  W->>W: Apply quiet hours, caps, expiry, dedupe
+  W->>Push: Encrypted Web Push using VAPID
+  Push-->>SW: push event
+  SW-->>U: Privacy-safe notification
+  W->>DB: Record delivery attempt and terminal/retry state
+
+  alt Endpoint returns 404 or 410
+    W->>DB: Revoke subscription and stop endpoint retries
+  else Transient 429 or 5xx
+    W-->>Q: Retryable failure with backoff
+  end

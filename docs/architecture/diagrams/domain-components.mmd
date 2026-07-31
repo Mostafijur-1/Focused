@@ -1,0 +1,64 @@
+flowchart TB
+  subgraph Transport["Transport adapters"]
+    direction LR
+    HTTP["Next.js REST route handlers"]
+    SSE["SSE streaming"]
+    JOB["Signed queue callbacks"]
+  end
+
+  subgraph Application["Application layer"]
+    direction LR
+    CMD["Commands / use cases"]
+    QUERY["Queries / projections"]
+    POLICY["Authorization orchestration"]
+    TX["Transactions + idempotency"]
+  end
+
+  subgraph Domain["Domain layer - framework free"]
+    direction LR
+    ENTITY["Entities / aggregates"]
+    VALUE["Value objects"]
+    RULE["Invariants / state machines"]
+    EVENT["Domain events"]
+  end
+
+  subgraph Ports["Ports"]
+    direction LR
+    REPO["Repository interfaces"]
+    CLOCK["Clock / ID / transaction"]
+    QUEUE["Queue / notification"]
+    PROVIDER["AI / search / calendar"]
+  end
+
+  subgraph Infra["Infrastructure adapters"]
+    direction LR
+    PRISMA["Prisma repositories"]
+    REDIS["Redis cache / rate limits"]
+    QSTASH["Outbox relay / QStash"]
+    EXT["Cloudinary, Web Push, OAuth, AI"]
+  end
+
+  DATA[("PostgreSQL and managed providers")]
+
+  HTTP --> CMD
+  SSE --> QUERY
+  JOB --> CMD
+  CMD --> ENTITY
+  QUERY --> ENTITY
+  POLICY --> RULE
+  TX --> EVENT
+  ENTITY --> REPO
+  VALUE --> CLOCK
+  EVENT --> QUEUE
+  RULE --> PROVIDER
+  REPO --> PRISMA
+  CLOCK --> PRISMA
+  QUEUE --> QSTASH
+  PROVIDER --> EXT
+  PRISMA --> DATA
+  REDIS --> DATA
+  QSTASH --> DATA
+  EXT --> DATA
+
+  NOTE["Dependency rule: outer layers depend inward; domain imports no framework"]
+  NOTE -.-> Domain

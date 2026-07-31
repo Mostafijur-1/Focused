@@ -1,0 +1,72 @@
+flowchart LR
+  subgraph Clients["Client Applications"]
+    Web["Focused Web / PWA\nNext.js + React"]
+    Mobile["Future iOS / Android\nGenerated REST client"]
+    Admin["Admin Console\nRole-gated routes"]
+  end
+
+  subgraph Vercel["Vercel - Primary Application Plane"]
+    Edge["CDN / WAF / TLS\nStatic assets + routing"]
+    UI["Next.js App Router\nRSC + accessible UI"]
+    API["REST API /api/v1\nRoute handlers"]
+    Stream["SSE streaming endpoints\nAI responses / job progress"]
+    Internal["Signed internal endpoints\nqueue consumers + cron triggers"]
+  end
+
+  subgraph Core["Clean Architecture Modular Monolith"]
+    Identity["Identity & Preferences"]
+    Planning["Planning"]
+    Focus["Focus Execution"]
+    Tracking["Tracking & Wellbeing"]
+    Knowledge["Reflection & Knowledge"]
+    AI["AI Guidance"]
+    Analytics["Analytics & Reports"]
+    Engage["Engagement & Gamification"]
+    Platform["Platform\nAuthZ, audit, outbox, jobs"]
+  end
+
+  subgraph Data["Managed Data Plane"]
+    Neon[("Neon PostgreSQL\nsource of truth")]
+    Redis[("Upstash Redis\nrate limits, cache, locks")]
+    Cloudinary[("Cloudinary\nauthenticated media")]
+    QStash["QStash / Workflow\ndurable queue + schedules"]
+  end
+
+  subgraph Providers["External Providers"]
+    OAuth["OIDC / OAuth providers"]
+    Push["Browser push services"]
+    LLM["Groq + Gemini\nAI inference providers"]
+    Calendar["Calendar providers"]
+    News["Curated news / resource feeds"]
+    Observe["Logs, metrics, traces, errors"]
+  end
+
+  Web --> Edge
+  Mobile --> Edge
+  Admin --> Edge
+  Edge --> UI
+  Edge --> API
+  Edge --> Stream
+  UI --> API
+  API --> Core
+  Stream --> AI
+  Internal --> Core
+  Core --> Neon
+  Core --> Redis
+  Core --> Cloudinary
+  Core --> QStash
+  QStash --> Internal
+  Identity --> OAuth
+  Engage --> Push
+  AI --> LLM
+  Planning --> Calendar
+  Knowledge --> News
+  Vercel --> Observe
+  QStash --> Observe
+
+  classDef primary fill:#e8f2ff,stroke:#2e74b5,color:#0b2545,stroke-width:2px;
+  classDef data fill:#edf8f2,stroke:#2e7d5b,color:#163d2b;
+  classDef external fill:#fff8e8,stroke:#a97900,color:#4d3900;
+  class API,Core primary;
+  class Neon,Redis,Cloudinary,QStash data;
+  class OAuth,Push,LLM,Calendar,News,Observe external;

@@ -1,0 +1,37 @@
+sequenceDiagram
+  autonumber
+  actor U as Member
+  participant UI as Coach UI
+  participant API as AI Route / SSE
+  participant Guard as Policy + Context Resolver
+  participant DB as PostgreSQL
+  participant Cache as Redis
+  participant Model as Groq / Gemini Router
+  participant Eval as Safety / Quality Evaluator
+
+  U->>UI: Ask coach with selected scopes
+  UI->>API: POST /api/v1/ai/runs + contextGrantIds
+  API->>Guard: Authenticate, authorize, check consent and budget
+  Guard->>DB: Load only granted source records and versions
+  Guard->>Guard: Minimize, redact, label provenance, resist injection
+  Guard->>Cache: Check safe semantic/result cache by tenant + policy version
+  API->>DB: Persist AI run, prompt/model/policy versions, source manifest
+  API->>Model: Resolve alias and select eligible Groq/Gemini under privacy and budget policy
+  API->>Model: Stream provider-neutral request
+  Model-->>API: Token / structured output stream
+  API-->>UI: SSE events: delta, citation, usage, status
+  API->>Eval: Validate schema, grounding, safety, action boundaries
+  Eval-->>API: pass / repair / fallback
+  API->>DB: Store final output, evidence links, cost, evaluation
+  API-->>UI: completed event
+
+  alt Output proposes a write
+    API->>DB: Save expiring AIProposal only
+    UI-->>U: Show diff, rationale, sources, consequences
+    U->>API: POST /ai/proposals/{id}/accept + Idempotency-Key
+    API->>Guard: Reauthorize and revalidate current versions
+    Guard->>DB: Execute domain command transactionally
+    API-->>U: Confirmed domain result
+  else Provider, quota, or policy failure
+    API-->>UI: Safe error + deterministic non-AI path
+  end

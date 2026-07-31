@@ -1,0 +1,36 @@
+flowchart TB
+  DNS["focused.example\nDNS + TLS"] --> CDN["Vercel Edge Network\nCDN, WAF, routing"]
+
+  subgraph Region["Primary compute region - colocated with Neon"]
+    WebFn["Next.js Functions\nUI + /api/v1"]
+    JobFn["Internal Job Functions\nQStash signature required"]
+    AIFn["AI Streaming Functions\nSSE + cancellation"]
+    Pool["Prisma + Neon adapter\npooled DATABASE_URL"]
+    DB[("Neon primary branch\nPITR + read replicas when needed")]
+    Cache[("Upstash Redis\nregional REST endpoint")]
+  end
+
+  CDN --> WebFn
+  CDN --> AIFn
+  WebFn --> Pool --> DB
+  JobFn --> Pool
+  AIFn --> Pool
+  WebFn --> Cache
+  JobFn --> Cache
+
+  Queue["QStash queues / schedules\nretries, DLQ, flow control"] -->|"signed HTTPS"| JobFn
+  WebFn --> Queue
+  AIFn --> Models["Groq + Gemini\nprovider-neutral AI gateway"]
+  JobFn --> Push["Web Push services"]
+  WebFn --> Media["Cloudinary signed upload / delivery"]
+
+  CI["GitHub Actions\nlint, test, build, Sonar, schema checks"] --> Preview["Vercel Preview\nNeon ephemeral branch"]
+  CI -->|"approved promotion"| CDN
+  Preview --> PreviewDB[("Neon preview branch")]
+  Direct["DIRECT_URL\nmigrations only"] --> DB
+
+  Obs["Observability\nOpenTelemetry + error tracking"]
+  WebFn --> Obs
+  JobFn --> Obs
+  AIFn --> Obs
+  Queue --> Obs

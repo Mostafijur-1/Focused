@@ -1,0 +1,33 @@
+sequenceDiagram
+  autonumber
+  actor U as Member
+  participant UI as Next.js / PWA
+  participant API as Daily Focus Route
+  participant App as DailyFocus Use Case
+  participant DB as PostgreSQL
+  participant Outbox as Outbox Relay
+  participant Q as QStash
+
+  U->>UI: Save today's priorities
+  UI->>API: PUT /api/v1/daily-plans/{date}<br/>If-Match + Idempotency-Key
+  API->>API: Authenticate, authorize, validate
+  API->>App: Execute UpdateDailyPlan command
+  App->>DB: Transaction: lock plan/version
+  App->>App: Enforce <= 3 primaries and capacity rules
+  App->>DB: Update plan + append outbox event + idempotency result
+  DB-->>App: Commit
+  App-->>API: Plan DTO + new ETag
+  API-->>UI: 200 OK
+  UI-->>U: Optimistic state confirmed
+  Outbox->>DB: Claim unpublished events with SKIP LOCKED
+  Outbox->>Q: Publish DailyPlanUpdated
+  Q-->>Outbox: Message id
+  Outbox->>DB: Mark published
+  Q->>API: Signed internal projection job
+  API->>DB: Update dashboard / analytics projection idempotently
+
+  alt Concurrent stale update
+    App-->>API: version_conflict
+    API-->>UI: 412 + current ETag and merge hints
+    UI-->>U: Review differences without silent last-write-wins
+  end

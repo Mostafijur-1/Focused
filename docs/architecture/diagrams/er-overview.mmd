@@ -1,0 +1,66 @@
+flowchart TB
+  subgraph Identity["Identity and access"]
+    direction LR
+    U["USER"] -->|"1:1"| UP["USER_PROFILE"]
+    U -->|"1:N"| OA["OAUTH_ACCOUNT"]
+    U -->|"1:N"| RT["REFRESH_TOKEN"]
+    U -->|"N:M"| ROLE["ROLE / PERMISSION"]
+    U -->|"1:N"| CONSENT["CONSENT"]
+    U -->|"1:N"| PUSH["PUSH_SUBSCRIPTION"]
+  end
+
+  subgraph PlanFocus["Planning and focus"]
+    direction LR
+    GOAL["GOAL"] -->|"1:N"| MILE["MILESTONE"]
+    PLAN["PLAN"] -->|"1:N"| PI["PLAN_ITEM"]
+    GOAL -->|"0:N"| PI
+    PI -->|"0:N"| TB["TIME_BLOCK"]
+    FS["FOCUS_SESSION"] -->|"1:N"| PAUSE["SESSION_PAUSE"]
+    FS -->|"1:N"| INT["INTERRUPTION"]
+    GOAL -->|"0:N"| FS
+  end
+
+  subgraph TrackingKnowledge["Tracking, reflection, and knowledge"]
+    direction LR
+    HABIT["HABIT"] -->|"1:N"| HE["HABIT_ENTRY"]
+    TI["TRACKER_ITEM"] -->|"1:N"| TE["TRACKER_ENTRY"]
+    JOURNAL["JOURNAL_ENTRY"] -->|"1:N"| JR["JOURNAL_REVISION"]
+    NOTE["NOTE"]
+    BOOK["BOOKMARK"]
+    RES["RESOURCE"]
+  end
+
+  subgraph AIEngagement["AI, engagement, and platform"]
+    direction LR
+    CONV["AI_CONVERSATION"] -->|"1:N"| MSG["AI_MESSAGE"]
+    RUN["AI_RUN"] -->|"1:N"| GRANT["AI_CONTEXT_GRANT"]
+    RUN -->|"1:N"| PROP["AI_PROPOSAL"]
+    REM["REMINDER"] -->|"1:N"| OCC["REMINDER_OCCURRENCE"]
+    OCC -->|"0:N"| NOTIF["NOTIFICATION"]
+    NOTIF -->|"1:N"| DEL["DELIVERY_ATTEMPT"]
+    OUTBOX["OUTBOX_EVENT"]
+    AUDIT["AUDIT_EVENT"]
+  end
+
+  U -->|"owns"| GOAL
+  U -->|"owns"| PLAN
+  U -->|"performs"| FS
+  U -->|"owns"| HABIT
+  U -->|"owns"| TI
+  U -->|"writes"| JOURNAL
+  U -->|"owns"| NOTE
+  U -->|"owns"| BOOK
+  U -->|"owns"| RES
+  U -->|"requests"| RUN
+  U -->|"owns"| REM
+  U -->|"partition key"| OUTBOX
+  U -->|"actor"| AUDIT
+
+  classDef identity fill:#e8f2ff,stroke:#2e74b5,color:#0b2545;
+  classDef core fill:#edf8f2,stroke:#2e7d5b,color:#163d2b;
+  classDef private fill:#f6edff,stroke:#7b4bb7,color:#35204f;
+  classDef platform fill:#fff8e8,stroke:#a97900,color:#4d3900;
+  class U,UP,OA,RT,ROLE,CONSENT,PUSH identity;
+  class GOAL,MILE,PLAN,PI,TB,FS,PAUSE,INT,HABIT,HE,TI,TE core;
+  class JOURNAL,JR,NOTE,BOOK,RES,CONV,MSG,RUN,GRANT,PROP private;
+  class REM,OCC,NOTIF,DEL,OUTBOX,AUDIT platform;
