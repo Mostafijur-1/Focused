@@ -63,7 +63,7 @@ export function MarketingHeader({ locale, copy }: MarketingHeaderProps) {
             darkLabel={copy.darkTheme}
           />
           <Link
-            href={`/${locale}#start`}
+            href={`/${locale}/sign-in`}
             className={cn(
               buttonVariants({ variant: "outline", size: "compact" }),
               "hidden sm:inline-flex",
