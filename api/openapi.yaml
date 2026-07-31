@@ -76,6 +76,47 @@ paths:
                   timestamp: { type: string, format: date-time }
         "429": { $ref: "#/components/responses/RateLimited" }
         "500": { $ref: "#/components/responses/InternalError" }
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a password-based member account
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "202":
+          description: The verification request was accepted; the response is intentionally enumeration-safe
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AcceptedMessage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/verify-email:
+    post:
+      tags: [Authentication]
+      summary: Verify an email address using a single-use token
+      operationId: verifyEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OneTimeTokenRequest" }
+      responses:
+        "200":
+          description: Email address verified
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerifiedResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/login:
     post:
       tags: [Authentication]
@@ -99,8 +140,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SessionTokenResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request a single-use password-reset link
+      description: Always returns the same accepted response, including for an unknown address.
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ForgotPasswordRequest" }
+      responses:
+        "202":
+          description: The recovery request was accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AcceptedMessage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Replace a password using a single-use recovery token
+      description: Successful reset revokes every existing session for the member.
+      operationId: resetPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+      responses:
+        "200":
+          description: Password reset completed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResetResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/refresh:
     post:
       tags: [Authentication]
@@ -122,16 +210,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/SessionTokenResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/logout:
     post:
       tags: [Authentication]
       summary: Revoke the current session
       operationId: logout
+      security:
+        - refreshCookie: []
+        - {}
       parameters:
         - $ref: "#/components/parameters/CsrfToken"
       responses:
         "204": { description: Session revoked }
-        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/oauth/{provider}/start:
     post:
       tags: [Authentication]
@@ -150,10 +244,15 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [redirectUri, codeChallenge]
+              required: [locale, timeZone, returnTo]
               properties:
-                redirectUri: { type: string, format: uri }
-                codeChallenge: { type: string, minLength: 43, maxLength: 128 }
+                locale: { type: string, enum: [bn-BD, en] }
+                timeZone: { type: string, minLength: 1, maxLength: 80 }
+                returnTo:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: Same-origin application path validated by the server
       responses:
         "200":
           description: Provider authorization request
@@ -161,10 +260,105 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [authorizationUrl]
+                additionalProperties: false
+                required: [authorizationUrl, expiresAt]
                 properties:
                   authorizationUrl: { type: string, format: uri }
-        "400": { $ref: "#/components/responses/ValidationProblem" }
+                  expiresAt: { type: string, format: date-time }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [Authentication]
+      summary: Complete an OAuth Authorization Code with PKCE flow
+      description: Validates the provider response, server-held PKCE verifier, state cookie, and OIDC nonce where applicable.
+      operationId: completeOAuth
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string, enum: [google, github, microsoft] }
+        - name: code
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 2048 }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string, minLength: 32, maxLength: 256 }
+      responses:
+        "303":
+          description: Session established and redirected to the validated same-origin destination
+          headers:
+            Location: { schema: { type: string, format: uri } }
+            Set-Cookie:
+              description: Secure HttpOnly refresh-token cookie and CSRF cookie
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /users/me/sessions:
+    get:
+      tags: [Authentication]
+      summary: List the current member's active and recent sessions
+      operationId: listMySessions
+      responses:
+        "200":
+          description: Member-owned session list
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AuthSession" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /users/me/sessions/{sessionId}:
+    delete:
+      tags: [Authentication]
+      summary: Revoke one member-owned session
+      operationId: revokeMySession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      responses:
+        "200":
+          description: Session revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RevocationResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /users/me/sessions/logout-all:
+    post:
+      tags: [Authentication]
+      summary: Revoke every other session owned by the current member
+      operationId: logoutAllOtherSessions
+      responses:
+        "200":
+          description: Other sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [revoked]
+                properties:
+                  revoked: { type: integer, minimum: 0 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /users/me/profile:
     get:
       tags: [Profile]
@@ -743,7 +937,8 @@ components:
     refreshCookie:
       type: apiKey
       in: cookie
-      name: __Host-focused_refresh
+      name: focused_refresh
+      description: Path-scoped, Secure, HttpOnly, SameSite=Lax opaque refresh token
   headers:
     ETag:
       description: Opaque aggregate version validator
@@ -795,6 +990,11 @@ components:
       required: true
       schema: { $ref: "#/components/schemas/Uuid" }
   responses:
+    BadRequest:
+      description: The request body is malformed or a one-time security token is invalid
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
     Unauthorized:
       description: Authentication is absent, invalid, expired, or revoked
       headers:
@@ -841,6 +1041,11 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+    ServiceUnavailable:
+      description: A required provider is unavailable or is not configured
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
   schemas:
     Uuid:
       type: string
@@ -884,8 +1089,57 @@ components:
       required: [email, password]
       properties:
         email: { type: string, format: email, maxLength: 320 }
-        password: { type: string, minLength: 8, maxLength: 1024 }
+        password: { type: string, minLength: 1, maxLength: 128 }
         deviceName: { type: string, maxLength: 120 }
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, displayName, locale, timeZone]
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+        password: { type: string, minLength: 12, maxLength: 128 }
+        displayName: { type: string, minLength: 2, maxLength: 120 }
+        locale: { type: string, enum: [bn-BD, en] }
+        timeZone: { type: string, minLength: 1, maxLength: 80 }
+    OneTimeTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 256 }
+    ForgotPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [email, locale]
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+        locale: { type: string, enum: [bn-BD, en] }
+    ResetPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [token, password]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 256 }
+        password: { type: string, minLength: 12, maxLength: 128 }
+    AcceptedMessage:
+      type: object
+      additionalProperties: false
+      required: [accepted, message]
+      properties:
+        accepted: { type: boolean, const: true }
+        message: { type: string }
+    VerifiedResult:
+      type: object
+      additionalProperties: false
+      required: [verified]
+      properties:
+        verified: { type: boolean, const: true }
+    ResetResult:
+      type: object
+      additionalProperties: false
+      required: [reset]
+      properties:
+        reset: { type: boolean, const: true }
     SessionTokenResponse:
       type: object
       additionalProperties: false
@@ -902,6 +1156,24 @@ components:
             id: { $ref: "#/components/schemas/Uuid" }
             displayName: { type: string }
             permissions: { type: array, items: { type: string } }
+    AuthSession:
+      type: object
+      additionalProperties: false
+      required: [id, status, lastSeenAt, expiresAt, createdAt, current]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        status: { type: string, enum: [ACTIVE, REVOKED, EXPIRED] }
+        deviceName: { type: [string, "null"], maxLength: 120 }
+        lastSeenAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        current: { type: boolean }
+    RevocationResult:
+      type: object
+      additionalProperties: false
+      required: [revoked]
+      properties:
+        revoked: { type: boolean, const: true }
     UserProfile:
       type: object
       required: [userId, displayName, timeZone, locale, weekStartsOn, version]

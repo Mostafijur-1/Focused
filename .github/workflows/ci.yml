@@ -45,6 +45,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Validate Prisma schema
+        run: pnpm db:validate
+
       - name: Check formatting
         run: pnpm format
 
@@ -96,6 +102,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
       - name: Install Playwright Chromium
         run: pnpm --filter @focused/web exec playwright install --with-deps chromium
 
@@ -110,6 +119,57 @@ jobs:
           path: apps/web/playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+
+  authentication-database:
+    name: Authentication database integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: focused_test
+          POSTGRES_USER: focused
+          POSTGRES_PASSWORD: focused_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U focused -d focused_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DIRECT_URL: postgresql://focused:focused_test@127.0.0.1:5432/focused_test?schema=public
+      INTEGRATION_DATABASE_URL: postgresql://focused:focused_test@127.0.0.1:5432/focused_test?schema=public
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Apply authentication migration
+        run: pnpm db:migrate:deploy
+
+      - name: Run PostgreSQL authentication integration test
+        run: pnpm --filter @focused/web exec vitest run tests/integration/prisma-auth-repository.integration.test.ts
 
   sonar:
     name: SonarQube scan

@@ -6,7 +6,7 @@ The canonical machine-readable contract is [`openapi.yaml`](./openapi.yaml). It 
 
 - Base path: `/api/v1`
 - Media type: `application/json`
-- Authentication: short-lived bearer access token for protected routes; rotating refresh cookie only on the refresh endpoint
+- Authentication: 10-minute EdDSA bearer access token for protected routes; opaque rotating refresh cookie for browser session lifecycle
 - Validation: Zod at transport boundaries, with unknown fields rejected for command payloads unless explicitly documented
 - Errors: stable code, localized safe message, request correlation ID, and optional field errors defined by the contract
 - Dates: RFC 3339/ISO 8601; authoritative timestamps are UTC
@@ -24,11 +24,9 @@ The CI quality gate runs the same command. Route handlers must update their Zod 
 
 ## Implemented endpoints
 
-| Method | Path             | Authentication | Purpose                                                           |
-| ------ | ---------------- | -------------- | ----------------------------------------------------------------- |
-| `GET`  | `/api/v1/health` | Public         | Process availability, version, timestamp, and request correlation |
+Milestone 2 implements health, registration, email verification, sign-in, refresh, logout, password recovery/reset, OAuth start/callback, and member-owned session listing/revocation. The canonical paths and schemas are in OpenAPI; the operational details are in [`../docs/authentication.md`](../docs/authentication.md).
 
-The remaining paths are approved forward contracts and are implemented milestone by milestone. Unimplemented contracts must not be deployed as handlers returning misleading success states.
+Other paths remain approved forward contracts and are implemented milestone by milestone. Unimplemented contracts must not be deployed as handlers returning misleading success states.
 
 ## Health example
 

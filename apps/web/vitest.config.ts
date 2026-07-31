@@ -23,6 +23,12 @@ export default defineConfig({
         "src/lib/errors/**/*.ts",
         "src/lib/http/**/*.ts",
         "src/components/ui/**/*.tsx",
+        "src/features/auth/domain/**/*.ts",
+        "src/features/auth/application/**/*.ts",
+        "src/features/auth/infrastructure/crypto/**/*.ts",
+        "src/features/auth/infrastructure/rate-limit/in-memory-auth-rate-limiter.ts",
+        "src/features/auth/transport/auth-schemas.ts",
+        "src/features/auth/transport/request-security.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {

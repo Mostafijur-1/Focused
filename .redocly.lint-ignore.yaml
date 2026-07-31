@@ -1,0 +1,5 @@
+# OAuth Authorization Code callbacks intentionally complete with an HTTP redirect,
+# not a misleading 2xx response. All other recommended Redocly rules still apply.
+api/openapi.yaml:
+  operation-2xx-response:
+    - "#/paths/~1auth~1oauth~1{provider}~1callback/get/responses"

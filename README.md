@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestone 1 establishes the production foundation:
+Milestones 1 and 2 establish the production foundation and Authentication boundary:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -15,8 +15,12 @@ Milestone 1 establishes the production foundation:
 - Versioned `/api/v1/health` Route Handler and OpenAPI 3.1 validation
 - Vitest, Testing Library, Playwright, and automated WCAG checks
 - GitHub Actions, SonarQube, Docker, and Vercel configuration
+- Password registration, native Bangla/English verification and recovery flows
+- EdDSA access tokens, opaque rotating refresh tokens, replay-family revocation, and session controls
+- Google, GitHub, and Microsoft OAuth Authorization Code + server-owned PKCE adapters
+- PostgreSQL identity migration, Prisma/Neon runtime adapter, RBAC, audit events, CSRF/origin checks, and distributed rate-limit adapter
 
-Authentication and business modules are intentionally not included until their approved milestones.
+FocusOS business modules remain forward contracts until their approved milestones.
 
 ## Architecture
 
@@ -26,9 +30,7 @@ Focused starts as a Clean Architecture modular monolith deployed on Vercel. The 
 apps/web/src/
 ├── app/              Next.js routes, layouts, metadata, and Route Handlers
 ├── components/       Reusable UI, brand, providers, and application shells
-├── domain/           Framework-independent entities, values, and policies
-├── application/      Use cases and provider/repository ports
-├── infrastructure/   Prisma, queue, cache, media, OAuth, AI, and telemetry adapters
+├── features/         Feature-owned domain, application, adapters, transport, and UI
 ├── i18n/             Locale configuration, dictionaries, and formatting
 └── lib/              Configuration, errors, HTTP, observability, and utilities
 ```
@@ -69,29 +71,25 @@ Open `http://localhost:3000`; the root redirects to `/bn-BD`. English is availab
 
 ## Environment variables
 
-| Variable                |        Required | Default                 | Purpose                                            |
-| ----------------------- | --------------: | ----------------------- | -------------------------------------------------- |
-| `NEXT_PUBLIC_APP_URL`   |      Production | `http://localhost:3000` | Canonical URL for metadata, sitemap, and callbacks |
-| `LOG_LEVEL`             |              No | `info`                  | Minimum structured server log level                |
-| `VERCEL_GIT_COMMIT_SHA` | Vercel-provided | `development`           | Safe build version returned by health              |
-
-Future provider and database secrets are added only in the milestone that owns them. Never expose a secret with a `NEXT_PUBLIC_` prefix.
+The complete Authentication variable catalog and key-generation instructions are in [docs/authentication.md](docs/authentication.md). `DATABASE_URL` uses Neon's pooled runtime endpoint; `DIRECT_URL` uses its direct migration endpoint. Never expose a secret with a `NEXT_PUBLIC_` prefix.
 
 ## Commands
 
-| Command              | Purpose                                         |
-| -------------------- | ----------------------------------------------- |
-| `pnpm dev`           | Start the web development server                |
-| `pnpm build`         | Create the production standalone build          |
-| `pnpm start`         | Start a completed production build              |
-| `pnpm lint`          | Run zero-warning ESLint checks                  |
-| `pnpm typecheck`     | Run strict TypeScript without emitting files    |
-| `pnpm test`          | Run unit and component tests                    |
-| `pnpm test:coverage` | Run enforced coverage thresholds                |
-| `pnpm test:e2e`      | Run Playwright browser/accessibility tests      |
-| `pnpm api:lint`      | Validate the OpenAPI 3.1 contract               |
-| `pnpm format`        | Verify Prettier formatting                      |
-| `pnpm quality`       | Run the complete non-browser local quality gate |
+| Command                  | Purpose                                         |
+| ------------------------ | ----------------------------------------------- |
+| `pnpm dev`               | Start the web development server                |
+| `pnpm build`             | Create the production standalone build          |
+| `pnpm start`             | Start a completed production build              |
+| `pnpm lint`              | Run zero-warning ESLint checks                  |
+| `pnpm typecheck`         | Run strict TypeScript without emitting files    |
+| `pnpm test`              | Run unit and component tests                    |
+| `pnpm test:coverage`     | Run enforced coverage thresholds                |
+| `pnpm test:e2e`          | Run Playwright browser/accessibility tests      |
+| `pnpm api:lint`          | Validate the OpenAPI 3.1 contract               |
+| `pnpm db:validate`       | Validate the Prisma data model                  |
+| `pnpm db:migrate:deploy` | Apply committed migrations safely               |
+| `pnpm format`            | Verify Prettier formatting                      |
+| `pnpm quality`           | Run the complete non-browser local quality gate |
 
 Install Playwright's local Chromium once before the first browser run:
 
@@ -165,6 +163,8 @@ The application uses standalone output for Docker while remaining fully compatib
 - No client persistence for future access tokens
 - No private content in logs, analytics, errors, notifications, or AI traces
 - Dependabot for npm and GitHub Actions
+
+Authentication controls, provider setup, incident actions, and the threat model are documented in [docs/authentication.md](docs/authentication.md) and [docs/security/authentication-threat-model.md](docs/security/authentication-threat-model.md).
 
 The CSP remains report-only until production telemetry proves all required sources and a nonce strategy is integrated. It must not be promoted to enforcement by copying unsafe assumptions.
 

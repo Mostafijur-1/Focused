@@ -61,3 +61,21 @@ test("exposes a no-store health endpoint with correlation", async ({
     service: "focused-web",
   });
 });
+
+test("renders an accessible Bangla authentication flow with client validation", async ({
+  page,
+}) => {
+  await page.goto("/bn-BD/sign-up");
+  await expect(
+    page.getByRole("heading", { name: "আপনার FocusOS তৈরি করুন" }),
+  ).toBeVisible();
+  await page.getByLabel("Email").fill("invalid-email");
+  await page.getByLabel("Password", { exact: true }).fill("weak");
+  await page.getByRole("button", { name: "Account তৈরি করুন" }).click();
+  await expect(page.getByRole("alert").first()).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});
