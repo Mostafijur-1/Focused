@@ -1,0 +1,1096 @@
+openapi: 3.1.0
+info:
+  title: Focused REST API
+  version: 1.0.0
+  summary: Mobile-neutral public contract for Focused FocusOS
+  description: |
+    Architecture baseline. Domain route handlers are generated/registered from the
+    same Zod contracts used by transport adapters. Private resources are owner-scoped;
+    authorization is never implied by endpoint visibility.
+  contact:
+    name: Focused Engineering
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://focused.example/api/v1
+    description: Production
+  - url: https://{previewHost}/api/v1
+    description: Preview
+    variables:
+      previewHost:
+        default: focused-preview.vercel.app
+tags:
+  - name: Authentication
+    description: Identity, OAuth, access tokens, refresh rotation, and session lifecycle.
+  - name: Profile
+    description: Member-owned profile, locale, time-zone, and preference resources.
+  - name: Daily Focus
+    description: Daily commitments, capacity, and close-out decisions.
+  - name: Focus Sessions
+    description: Deep-work and Pomodoro session state transitions.
+  - name: Goals
+    description: Outcome-oriented goals, milestones, and check-ins.
+  - name: Reminders
+    description: One-time and recurring reminder rules and occurrences.
+  - name: Notifications
+    description: In-app notifications, preferences, and Web Push subscriptions.
+  - name: AI
+    description: Provider-neutral scoped AI runs routed through approved Groq or Gemini adapters, with streams, evidence, and user-approved proposals.
+  - name: Jobs
+    description: Durable asynchronous reports, exports, and status resources.
+  - name: Administration
+    description: Least-privilege operational and audit resources.
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate a member and create a session
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated session
+          headers:
+            Set-Cookie:
+              description: Secure HttpOnly refresh-token cookie for browser clients
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTokenResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Rotate the refresh token and issue a new access token
+      operationId: refreshSession
+      security:
+        - refreshCookie: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Rotated session tokens
+          headers:
+            Set-Cookie:
+              description: Rotated Secure HttpOnly refresh-token cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTokenResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke the current session
+      operationId: logout
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204': { description: Session revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/oauth/{provider}/start:
+    post:
+      tags: [Authentication]
+      summary: Start an OAuth Authorization Code with PKCE flow
+      operationId: startOAuth
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string, enum: [google, github, microsoft] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [redirectUri, codeChallenge]
+              properties:
+                redirectUri: { type: string, format: uri }
+                codeChallenge: { type: string, minLength: 43, maxLength: 128 }
+      responses:
+        '200':
+          description: Provider authorization request
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl]
+                properties:
+                  authorizationUrl: { type: string, format: uri }
+        '400': { $ref: '#/components/responses/ValidationProblem' }
+  /users/me/profile:
+    get:
+      tags: [Profile]
+      summary: Get the current member profile
+      operationId: getMyProfile
+      responses:
+        '200':
+          description: Current member profile
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Profile]
+      summary: Update the current member profile
+      operationId: updateMyProfile
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: '#/components/schemas/UpdateProfileRequest' }
+      responses:
+        '200':
+          description: Updated profile
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /daily-plans/{date}:
+    get:
+      tags: [Daily Focus]
+      summary: Get a daily focus plan
+      operationId: getDailyPlan
+      parameters:
+        - $ref: '#/components/parameters/LocalDatePath'
+      responses:
+        '200':
+          description: Daily plan
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DailyPlan' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Daily Focus]
+      summary: Create or replace a daily focus plan
+      operationId: putDailyPlan
+      parameters:
+        - $ref: '#/components/parameters/LocalDatePath'
+        - $ref: '#/components/parameters/IfMatchOptional'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PutDailyPlanRequest' }
+      responses:
+        '200':
+          description: Updated daily plan
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DailyPlan' }
+        '201':
+          description: Created daily plan
+          headers:
+            Location: { schema: { type: string } }
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DailyPlan' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /daily-plans/{date}/completion:
+    post:
+      tags: [Daily Focus]
+      summary: Close a daily plan with explicit item decisions
+      operationId: closeDailyPlan
+      parameters:
+        - $ref: '#/components/parameters/LocalDatePath'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decisions]
+              properties:
+                decisions:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [itemId, outcome]
+                    properties:
+                      itemId: { $ref: '#/components/schemas/Uuid' }
+                      outcome: { type: string, enum: [COMPLETED, DEFERRED, CANCELLED] }
+                      reason: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Closed plan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DailyPlan' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /focus-sessions:
+    get:
+      tags: [Focus Sessions]
+      summary: List focus sessions
+      operationId: listFocusSessions
+      parameters:
+        - $ref: '#/components/parameters/PageAfter'
+        - $ref: '#/components/parameters/PageLimit'
+      responses:
+        '200':
+          description: Cursor-paginated focus sessions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMetaEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/FocusSession' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Focus Sessions]
+      summary: Start a focus session
+      operationId: startFocusSession
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StartFocusSessionRequest' }
+      responses:
+        '201':
+          description: Started session
+          headers:
+            Location: { schema: { type: string } }
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FocusSession' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /focus-sessions/{focusSessionId}/pauses:
+    post:
+      tags: [Focus Sessions]
+      summary: Pause an active focus session
+      operationId: pauseFocusSession
+      parameters:
+        - $ref: '#/components/parameters/FocusSessionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Paused session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FocusSession' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+  /focus-sessions/{focusSessionId}/resumption:
+    post:
+      tags: [Focus Sessions]
+      summary: Resume a paused focus session
+      operationId: resumeFocusSession
+      parameters:
+        - $ref: '#/components/parameters/FocusSessionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Resumed session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FocusSession' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /focus-sessions/{focusSessionId}/completion:
+    post:
+      tags: [Focus Sessions]
+      summary: Complete a focus session
+      operationId: completeFocusSession
+      parameters:
+        - $ref: '#/components/parameters/FocusSessionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                outcome: { type: string, maxLength: 2000 }
+      responses:
+        '200':
+          description: Completed session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FocusSession' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /goals:
+    get:
+      tags: [Goals]
+      summary: List goals
+      operationId: listGoals
+      parameters:
+        - $ref: '#/components/parameters/PageAfter'
+        - $ref: '#/components/parameters/PageLimit'
+        - name: filter[status]
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Goal collection
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMetaEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Goal' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Goals]
+      summary: Create a goal
+      operationId: createGoal
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateGoalRequest' }
+      responses:
+        '201':
+          description: Created goal
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Goal' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /goals/{goalId}:
+    get:
+      tags: [Goals]
+      summary: Get a goal
+      operationId: getGoal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      responses:
+        '200':
+          description: Goal
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Goal' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Goals]
+      summary: Update a goal
+      operationId: updateGoal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: '#/components/schemas/CreateGoalRequest' }
+      responses:
+        '200':
+          description: Updated goal
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Goal' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+  /reminders:
+    get:
+      tags: [Reminders]
+      summary: List reminders
+      operationId: listReminders
+      parameters:
+        - $ref: '#/components/parameters/PageAfter'
+        - $ref: '#/components/parameters/PageLimit'
+      responses:
+        '200':
+          description: Reminder collection
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMetaEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Reminder' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Reminders]
+      summary: Create a reminder
+      operationId: createReminder
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateReminderRequest' }
+      responses:
+        '201':
+          description: Created reminder
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reminder' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /push-subscriptions:
+    post:
+      tags: [Notifications]
+      summary: Register a Web Push subscription
+      operationId: createPushSubscription
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushSubscriptionRequest' }
+      responses:
+        '201':
+          description: Registered subscription
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, createdAt]
+                properties:
+                  id: { $ref: '#/components/schemas/Uuid' }
+                  createdAt: { type: string, format: date-time }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List the notification inbox
+      operationId: listNotifications
+      parameters:
+        - $ref: '#/components/parameters/PageAfter'
+        - $ref: '#/components/parameters/PageLimit'
+      responses:
+        '200':
+          description: Notification inbox
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMetaEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Notification' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /ai/runs:
+    post:
+      tags: [AI]
+      summary: Create a scoped AI run
+      operationId: createAIRun
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAIRunRequest' }
+      responses:
+        '202':
+          description: AI run accepted
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AIRun' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /ai/runs/{aiRunId}:
+    get:
+      tags: [AI]
+      summary: Get AI run status and validated output
+      operationId: getAIRun
+      parameters:
+        - name: aiRunId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Uuid' }
+      responses:
+        '200':
+          description: AI run state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AIRun' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /ai/runs/{aiRunId}/events:
+    get:
+      tags: [AI]
+      summary: Stream typed AI run events using SSE
+      operationId: streamAIRunEvents
+      parameters:
+        - name: aiRunId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Uuid' }
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: { type: string, maxLength: 160 }
+      responses:
+        '200':
+          description: Server-sent event stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /ai/proposals/{proposalId}/decision:
+    post:
+      tags: [AI]
+      summary: Accept or reject an AI proposal
+      operationId: decideAIProposal
+      parameters:
+        - name: proposalId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Uuid' }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [ACCEPT, REJECT] }
+      responses:
+        '200':
+          description: Proposal decision and resulting resource reference
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [proposalId, status]
+                properties:
+                  proposalId: { $ref: '#/components/schemas/Uuid' }
+                  status: { type: string }
+                  resource: { $ref: '#/components/schemas/ResourceReference' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+  /exports:
+    post:
+      tags: [Jobs]
+      summary: Create a private data export job
+      operationId: createExportJob
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [categories, format]
+              properties:
+                categories:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: { type: string }
+                format: { type: string, enum: [json, csv_bundle, pdf] }
+                rangeStart: { type: string, format: date-time }
+                rangeEnd: { type: string, format: date-time }
+      responses:
+        '202':
+          description: Export accepted
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /exports/{exportId}:
+    get:
+      tags: [Jobs]
+      summary: Get data export job status
+      operationId: getExportJob
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Uuid' }
+      responses:
+        '200':
+          description: Export state; download URL is short lived when present
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/audit:
+    get:
+      tags: [Administration]
+      summary: List authorized privileged audit events
+      operationId: listAuditEvents
+      parameters:
+        - $ref: '#/components/parameters/PageAfter'
+        - $ref: '#/components/parameters/PageLimit'
+        - name: filter[action]
+          in: query
+          schema: { type: string, maxLength: 120 }
+      responses:
+        '200':
+          description: Authorized audit evidence
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMetaEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, action, actorType, occurredAt, correlationId]
+                          properties:
+                            id: { $ref: '#/components/schemas/Uuid' }
+                            action: { type: string }
+                            actorType: { type: string }
+                            targetType: { type: string }
+                            occurredAt: { type: string, format: date-time }
+                            correlationId: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Short-lived asymmetric access token
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-focused_refresh
+  headers:
+    ETag:
+      description: Opaque aggregate version validator
+      schema: { type: string, examples: ['"v7"'] }
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 160 }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string }
+    IfMatchOptional:
+      name: If-Match
+      in: header
+      required: false
+      schema: { type: string }
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: { type: string, minLength: 32, maxLength: 256 }
+    PageAfter:
+      name: page[after]
+      in: query
+      required: false
+      schema: { type: string, maxLength: 500 }
+    PageLimit:
+      name: page[limit]
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+    LocalDatePath:
+      name: date
+      in: path
+      required: true
+      schema: { type: string, format: date }
+    FocusSessionId:
+      name: focusSessionId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Uuid' }
+    GoalId:
+      name: goalId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Uuid' }
+  responses:
+    Unauthorized:
+      description: Authentication is absent, invalid, expired, or revoked
+      headers:
+        WWW-Authenticate: { schema: { type: string } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: Actor lacks permission; privacy-sensitive resources may return 404 instead
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Resource is unavailable to this actor
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Requested transition conflicts with current domain state
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    PreconditionFailed:
+      description: The aggregate version is stale
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ValidationProblem:
+      description: Input or domain validation failed
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    RateLimited:
+      description: Request or budget rate limit exceeded
+      headers:
+        Retry-After: { schema: { type: integer, minimum: 1 } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, correlationId]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }
+        code: { type: string, pattern: '^[a-z0-9_]+$' }
+        correlationId: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [code, message]
+            properties:
+              pointer: { type: string }
+              code: { type: string }
+              message: { type: string }
+    PageMetaEnvelope:
+      type: object
+      required: [data, page]
+      properties:
+        data: { type: array, items: {} }
+        page:
+          type: object
+          required: [hasMore]
+          properties:
+            next: { type: [string, 'null'] }
+            hasMore: { type: boolean }
+        asOf: { type: string, format: date-time }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+        password: { type: string, minLength: 8, maxLength: 1024 }
+        deviceName: { type: string, maxLength: 120 }
+    SessionTokenResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType, expiresIn, sessionId, user]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, const: Bearer }
+        expiresIn: { type: integer, minimum: 60, maximum: 900 }
+        sessionId: { $ref: '#/components/schemas/Uuid' }
+        user:
+          type: object
+          required: [id, displayName, permissions]
+          properties:
+            id: { $ref: '#/components/schemas/Uuid' }
+            displayName: { type: string }
+            permissions: { type: array, items: { type: string } }
+    UserProfile:
+      type: object
+      required: [userId, displayName, timeZone, locale, weekStartsOn, version]
+      properties:
+        userId: { $ref: '#/components/schemas/Uuid' }
+        displayName: { type: string, minLength: 1, maxLength: 120 }
+        avatarUrl: { type: [string, 'null'], format: uri }
+        timeZone: { type: string, maxLength: 80 }
+        locale: { type: string, maxLength: 20 }
+        weekStartsOn: { type: integer, minimum: 0, maximum: 6 }
+        version: { type: integer, minimum: 1 }
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 120 }
+        timeZone: { type: string, maxLength: 80 }
+        locale: { type: string, maxLength: 20 }
+        weekStartsOn: { type: integer, minimum: 0, maximum: 6 }
+    PlanItem:
+      type: object
+      required: [id, title, status, isPrimary, position, version]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        goalId: { type: [string, 'null'], format: uuid }
+        title: { type: string, maxLength: 240 }
+        status: { type: string, enum: [PLANNED, IN_PROGRESS, COMPLETED, DEFERRED, CANCELLED] }
+        isPrimary: { type: boolean }
+        estimateMinutes: { type: [integer, 'null'], minimum: 1, maximum: 1440 }
+        position: { type: integer, minimum: 0 }
+        version: { type: integer, minimum: 1 }
+    DailyPlan:
+      type: object
+      required: [id, date, timeZone, status, items, notDoing, version]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        date: { type: string, format: date }
+        timeZone: { type: string }
+        status: { type: string, enum: [DRAFT, ACTIVE, CLOSED, ARCHIVED] }
+        capacityMinutes: { type: [integer, 'null'], minimum: 0, maximum: 1440 }
+        items: { type: array, maxItems: 100, items: { $ref: '#/components/schemas/PlanItem' } }
+        notDoing: { type: array, maxItems: 30, items: { type: string, maxLength: 240 } }
+        version: { type: integer, minimum: 1 }
+    PutDailyPlanRequest:
+      type: object
+      additionalProperties: false
+      required: [timeZone, items]
+      properties:
+        timeZone: { type: string, maxLength: 80 }
+        capacityMinutes: { type: integer, minimum: 0, maximum: 1440 }
+        items:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [clientId, title, isPrimary, position]
+            properties:
+              id: { type: string, format: uuid }
+              clientId: { type: string, maxLength: 100 }
+              goalId: { type: string, format: uuid }
+              title: { type: string, minLength: 1, maxLength: 240 }
+              isPrimary: { type: boolean }
+              estimateMinutes: { type: integer, minimum: 1, maximum: 1440 }
+              position: { type: integer, minimum: 0 }
+        notDoing: { type: array, maxItems: 30, items: { type: string, maxLength: 240 } }
+    FocusSession:
+      type: object
+      required: [id, kind, status, intent, plannedSeconds, startedAt, pausedSeconds, version]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        goalId: { type: [string, 'null'], format: uuid }
+        kind: { type: string, enum: [DEEP_WORK, POMODORO, CUSTOM] }
+        status: { type: string, enum: [RUNNING, PAUSED, COMPLETED, ABANDONED] }
+        intent: { type: string }
+        plannedSeconds: { type: integer, minimum: 60, maximum: 43200 }
+        pausedSeconds: { type: integer, minimum: 0 }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        outcome: { type: [string, 'null'] }
+        version: { type: integer, minimum: 1 }
+    StartFocusSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [kind, intent, plannedSeconds]
+      properties:
+        goalId: { type: string, format: uuid }
+        kind: { type: string, enum: [DEEP_WORK, POMODORO, CUSTOM] }
+        intent: { type: string, minLength: 1, maxLength: 300 }
+        plannedSeconds: { type: integer, minimum: 60, maximum: 43200 }
+    Goal:
+      type: object
+      required: [id, title, status, horizon, version, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        parentGoalId: { type: [string, 'null'], format: uuid }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        status: { type: string }
+        horizon: { type: string }
+        successMeasure: { type: [string, 'null'] }
+        targetDate: { type: [string, 'null'], format: date }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateGoalRequest:
+      type: object
+      additionalProperties: false
+      required: [title, horizon]
+      properties:
+        parentGoalId: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 10000 }
+        horizon: { type: string, maxLength: 30 }
+        successMeasure: { type: string, maxLength: 2000 }
+        targetValue: { type: number }
+        targetUnit: { type: string, maxLength: 40 }
+        targetDate: { type: string, format: date }
+    Reminder:
+      type: object
+      required: [id, title, status, timeZone, ruleVersion, version, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        title: { type: string }
+        body: { type: [string, 'null'] }
+        status: { type: string, enum: [ACTIVE, PAUSED, COMPLETED, CANCELLED] }
+        timeZone: { type: string }
+        localTime: { type: [string, 'null'] }
+        rrule: { type: [string, 'null'] }
+        oneTimeAt: { type: [string, 'null'], format: date-time }
+        nextOccurrenceAt: { type: [string, 'null'], format: date-time }
+        ruleVersion: { type: integer, minimum: 1 }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+    CreateReminderRequest:
+      type: object
+      additionalProperties: false
+      required: [title, timeZone, deliveryPolicy]
+      oneOf:
+        - required: [oneTimeAt]
+        - required: [localTime, rrule]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        body: { type: string, maxLength: 500 }
+        timeZone: { type: string, maxLength: 80 }
+        localTime: { type: string, pattern: '^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$' }
+        rrule: { type: string, maxLength: 2000 }
+        oneTimeAt: { type: string, format: date-time }
+        quietHoursPolicy: { type: object }
+        deliveryPolicy: { type: object }
+    PushSubscriptionRequest:
+      type: object
+      additionalProperties: false
+      required: [endpoint, keys]
+      properties:
+        endpoint: { type: string, format: uri, maxLength: 4096 }
+        expirationTime: { type: [number, 'null'] }
+        keys:
+          type: object
+          additionalProperties: false
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string, minLength: 20, maxLength: 256 }
+            auth: { type: string, minLength: 10, maxLength: 128 }
+        deviceName: { type: string, maxLength: 120 }
+    Notification:
+      type: object
+      required: [id, category, title, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        category: { type: string }
+        title: { type: string }
+        body: { type: [string, 'null'] }
+        deepLink: { type: [string, 'null'] }
+        readAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+    CreateAIRunRequest:
+      type: object
+      additionalProperties: false
+      required: [kind, input, contextGrantIds]
+      properties:
+        kind: { type: string, enum: [COACH, MENTOR, DAILY_REVIEW, WEEKLY_REVIEW, MONTHLY_REVIEW, SUGGESTION, SMART_REMINDER] }
+        conversationId: { type: string, format: uuid }
+        input: { type: string, minLength: 1, maxLength: 20000 }
+        contextGrantIds:
+          type: array
+          maxItems: 50
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/Uuid' }
+        responseLocale: { type: string, maxLength: 20 }
+    AIRun:
+      type: object
+      required: [id, kind, status, promptVersion, policyVersion, modelAlias, queuedAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        kind: { type: string }
+        status: { type: string, enum: [QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED, EXPIRED] }
+        promptVersion: { type: string }
+        policyVersion: { type: string }
+        modelAlias:
+          type: string
+          description: Stable capability alias such as fast_text or deep_review; never a client-selected vendor model ID.
+        provider:
+          type: [string, 'null']
+          description: Resolved provider after policy routing; initially GROQ, GEMINI, or DETERMINISTIC.
+        output: { type: [object, 'null'] }
+        usage:
+          type: object
+          properties:
+            inputTokens: { type: integer }
+            outputTokens: { type: integer }
+            costMicros: { type: integer }
+        queuedAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+    Job:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        status: { type: string, enum: [QUEUED, RUNNING, COMPLETED, PARTIAL, FAILED, CANCELLED, EXPIRED] }
+        progress: { type: number, minimum: 0, maximum: 1 }
+        downloadUrl: { type: [string, 'null'], format: uri }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        failureCode: { type: [string, 'null'] }
+    ResourceReference:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string }
+        id: { $ref: '#/components/schemas/Uuid' }

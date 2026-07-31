@@ -1,0 +1,1389 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../packages/platform/database/generated"
+  runtime      = "nodejs"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETION_PENDING
+  DELETED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum ConsentStatus {
+  GRANTED
+  DENIED
+  WITHDRAWN
+}
+
+enum PlanType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum ItemStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+  CANCELLED
+}
+
+enum GoalStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ACHIEVED
+  ABANDONED
+  ARCHIVED
+}
+
+enum FocusKind {
+  DEEP_WORK
+  POMODORO
+  CUSTOM
+}
+
+enum FocusStatus {
+  RUNNING
+  PAUSED
+  COMPLETED
+  ABANDONED
+}
+
+enum HabitKind {
+  BOOLEAN
+  COUNT
+  DURATION
+  AVOIDANCE
+}
+
+enum TrackerKind {
+  LEARNING_PATH
+  LEARNING_ITEM
+  PROGRAMMING_SKILL
+  PROGRAMMING_PROJECT
+  CODING_PROBLEM
+  READING_ITEM
+  QURAN_PLAN
+  QURAN_REVIEW
+  PRAYER
+  WORKOUT_PLAN
+  WORKOUT_EXERCISE
+  SLEEP
+  MOOD
+  BODY_METRIC
+  CUSTOM
+}
+
+enum EntrySource {
+  MANUAL
+  IMPORT
+  INTEGRATION
+  SYSTEM
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum ResourceKind {
+  BOOKMARK
+  ARTICLE
+  BOOK
+  COURSE
+  VIDEO
+  PODCAST
+  NEWS
+  FILE
+  OTHER
+}
+
+enum AIRunKind {
+  COACH
+  MENTOR
+  DAILY_REVIEW
+  WEEKLY_REVIEW
+  MONTHLY_REVIEW
+  SUGGESTION
+  SMART_REMINDER
+  AGENT_RESEARCH
+}
+
+enum AIRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum AIProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  SUPERSEDED
+}
+
+enum ReminderStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum OccurrenceStatus {
+  PENDING
+  DEFERRED
+  ENQUEUED
+  DELIVERED
+  COMPLETED
+  MISSED
+  CANCELLED
+  FAILED
+}
+
+enum NotificationChannel {
+  IN_APP
+  WEB_PUSH
+  EMAIL
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  ACKNOWLEDGED
+  RETRYABLE_FAILURE
+  PERMANENT_FAILURE
+  EXPIRED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum ChallengeStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+model User {
+  id                String     @id @default(uuid()) @db.Uuid
+  email             String     @unique @db.Citext
+  emailVerifiedAt   DateTime?  @db.Timestamptz(6)
+  passwordHash      String?
+  status            UserStatus @default(PENDING_VERIFICATION)
+  permissionVersion Int        @default(1)
+  createdAt         DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime   @updatedAt @db.Timestamptz(6)
+  deletedAt         DateTime?  @db.Timestamptz(6)
+  version           Int        @default(1)
+
+  profile                UserProfile?
+  oauthAccounts          OAuthAccount[]
+  sessions               AuthSession[]
+  refreshTokens          RefreshToken[]
+  roles                  UserRole[]
+  consents               Consent[]
+  preferences            UserPreference[]
+  pushSubscriptions      PushSubscription[]
+  goals                  Goal[]
+  plans                  Plan[]
+  timeBlocks             TimeBlock[]
+  calendarConnections    CalendarConnection[]
+  calendarEvents         CalendarEvent[]
+  focusSessions          FocusSession[]
+  habits                 Habit[]
+  trackerItems           TrackerItem[]
+  journalEntries         JournalEntry[]
+  reflections            Reflection[]
+  notes                  Note[]
+  bookmarks              Bookmark[]
+  resources              Resource[]
+  lifeVisions            LifeVision[]
+  scheduleProposals      ScheduleProposal[]
+  aiConversations        AIConversation[]
+  aiRuns                 AIRun[]
+  aiContextGrants        AIContextGrant[]
+  aiProposals            AIProposal[]
+  reminders              Reminder[]
+  notificationPreference NotificationPreference?
+  notifications          Notification[]
+  xpEntries              XPLedgerEntry[]
+  achievementAwards      AchievementAward[]
+  userLevel              UserLevel?
+  streaks                Streak[]
+  challengeEnrollments   ChallengeEnrollment[]
+  metricEvents           MetricEvent[]
+  metricSnapshots        DailyMetricSnapshot[]
+  reportJobs             ReportJob[]
+  exportJobs             ExportJob[]
+  idempotencyRecords     IdempotencyRecord[]
+  auditEvents            AuditEvent[]            @relation("AuditActor")
+  outboxEvents           OutboxEvent[]
+
+  @@index([status, createdAt])
+  @@map("users")
+}
+
+model UserProfile {
+  userId        String   @id @db.Uuid
+  displayName   String   @db.VarChar(120)
+  avatarAssetId String?  @db.VarChar(255)
+  timeZone      String   @default("UTC") @db.VarChar(80)
+  locale        String   @default("en") @db.VarChar(20)
+  weekStartsOn  Int      @default(1) @db.SmallInt
+  accessibility Json     @default("{}")
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  version       Int      @default(1)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model OAuthAccount {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @db.Uuid
+  provider              String    @db.VarChar(50)
+  providerSubject       String    @db.VarChar(255)
+  providerEmail         String?   @db.Citext
+  accessTokenEncrypted  Bytes?
+  refreshTokenEncrypted Bytes?
+  scope                 String?   @db.Text
+  expiresAt             DateTime? @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@index([userId, provider])
+  @@map("oauth_accounts")
+}
+
+model AuthSession {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  status        SessionStatus  @default(ACTIVE)
+  deviceName    String?        @db.VarChar(120)
+  userAgentHash String?        @db.VarChar(128)
+  ipPrefix      String?        @db.VarChar(64)
+  lastSeenAt    DateTime       @default(now()) @db.Timestamptz(6)
+  expiresAt     DateTime       @db.Timestamptz(6)
+  revokedAt     DateTime?      @db.Timestamptz(6)
+  revokeReason  String?        @db.VarChar(80)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model RefreshToken {
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @db.Uuid
+  sessionId    String         @db.Uuid
+  familyId     String         @db.Uuid
+  tokenHash    String         @unique @db.Char(64)
+  parentId     String?        @db.Uuid
+  replacedById String?        @unique @db.Uuid
+  issuedAt     DateTime       @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime       @db.Timestamptz(6)
+  usedAt       DateTime?      @db.Timestamptz(6)
+  revokedAt    DateTime?      @db.Timestamptz(6)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session      AuthSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  parent       RefreshToken?  @relation("TokenLineage", fields: [parentId], references: [id], onDelete: SetNull)
+  children     RefreshToken[] @relation("TokenLineage")
+  replacement  RefreshToken?  @relation("TokenReplacement", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaced     RefreshToken?  @relation("TokenReplacement")
+
+  @@index([sessionId, familyId])
+  @@index([familyId, revokedAt])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique @db.VarChar(60)
+  name        String           @db.VarChar(100)
+  description String?          @db.Text
+  system      Boolean          @default(true)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  userRoles   UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique @db.VarChar(120)
+  description String           @db.Text
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId      String    @db.Uuid
+  roleId      String    @db.Uuid
+  grantedById String?   @db.Uuid
+  grantedAt   DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt   DateTime? @db.Timestamptz(6)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Consent {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @db.Uuid
+  purpose       String        @db.VarChar(100)
+  policyVersion String        @db.VarChar(40)
+  status        ConsentStatus
+  decidedAt     DateTime      @default(now()) @db.Timestamptz(6)
+  expiresAt     DateTime?     @db.Timestamptz(6)
+  evidence      Json          @default("{}")
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, purpose, policyVersion])
+  @@index([userId, purpose, status])
+  @@map("consents")
+}
+
+model UserPreference {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  namespace String   @db.VarChar(80)
+  key       String   @db.VarChar(100)
+  value     Json
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  version   Int      @default(1)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, namespace, key])
+  @@map("user_preferences")
+}
+
+model PushSubscription {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  endpointHash      String    @unique @db.Char(64)
+  endpointEncrypted Bytes
+  p256dhEncrypted   Bytes
+  authEncrypted     Bytes
+  userAgent         String?   @db.VarChar(300)
+  deviceName        String?   @db.VarChar(120)
+  expiresAt         DateTime? @db.Timestamptz(6)
+  revokedAt         DateTime? @db.Timestamptz(6)
+  lastSuccessAt     DateTime? @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("push_subscriptions")
+}
+
+model Goal {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @db.Uuid
+  parentGoalId   String?        @db.Uuid
+  title          String         @db.VarChar(200)
+  description    String?        @db.Text
+  status         GoalStatus     @default(DRAFT)
+  horizon        String         @db.VarChar(30)
+  successMeasure String?        @db.Text
+  targetValue    Decimal?       @db.Decimal(18, 4)
+  targetUnit     String?        @db.VarChar(40)
+  targetDate     DateTime?      @db.Date
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+  deletedAt      DateTime?      @db.Timestamptz(6)
+  version        Int            @default(1)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent         Goal?          @relation("GoalTree", fields: [parentGoalId], references: [id], onDelete: SetNull)
+  children       Goal[]         @relation("GoalTree")
+  milestones     Milestone[]
+  planItems      PlanItem[]
+  focusSessions  FocusSession[]
+
+  @@index([userId, status, targetDate])
+  @@index([parentGoalId])
+  @@map("goals")
+}
+
+model Milestone {
+  id          String     @id @default(uuid()) @db.Uuid
+  goalId      String     @db.Uuid
+  title       String     @db.VarChar(200)
+  dueDate     DateTime?  @db.Date
+  status      ItemStatus @default(PLANNED)
+  position    Int
+  completedAt DateTime?  @db.Timestamptz(6)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
+  version     Int        @default(1)
+  goal        Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, position])
+  @@index([goalId, status])
+  @@map("milestones")
+}
+
+model LifeVision {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  revision   Int              @default(1)
+  narrative  String?          @db.Text
+  values     Json             @default("[]")
+  antiGoals  Json             @default("[]")
+  createdAt  DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime         @updatedAt @db.Timestamptz(6)
+  archivedAt DateTime?        @db.Timestamptz(6)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  areas      LifeVisionArea[]
+
+  @@unique([userId, revision])
+  @@index([userId, archivedAt])
+  @@map("life_visions")
+}
+
+model LifeVisionArea {
+  id           String     @id @default(uuid()) @db.Uuid
+  lifeVisionId String     @db.Uuid
+  key          String     @db.VarChar(60)
+  title        String     @db.VarChar(100)
+  statement    String?    @db.Text
+  position     Int
+  lifeVision   LifeVision @relation(fields: [lifeVisionId], references: [id], onDelete: Cascade)
+
+  @@unique([lifeVisionId, key])
+  @@unique([lifeVisionId, position])
+  @@map("life_vision_areas")
+}
+
+model Plan {
+  id              String     @id @default(uuid()) @db.Uuid
+  userId          String     @db.Uuid
+  type            PlanType
+  periodStart     DateTime   @db.Date
+  periodEnd       DateTime   @db.Date
+  timeZone        String     @db.VarChar(80)
+  title           String?    @db.VarChar(200)
+  theme           String?    @db.VarChar(160)
+  status          PlanStatus @default(DRAFT)
+  capacityMinutes Int?
+  notDoing        Json       @default("[]")
+  closedAt        DateTime?  @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @db.Timestamptz(6)
+  version         Int        @default(1)
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           PlanItem[]
+
+  @@unique([userId, type, periodStart])
+  @@index([userId, type, status, periodStart])
+  @@map("plans")
+}
+
+model PlanItem {
+  id                 String      @id @default(uuid()) @db.Uuid
+  planId             String      @db.Uuid
+  goalId             String?     @db.Uuid
+  parentItemId       String?     @db.Uuid
+  title              String      @db.VarChar(240)
+  status             ItemStatus  @default(PLANNED)
+  isPrimary          Boolean     @default(false)
+  estimateMinutes    Int?
+  position           Int
+  completedAt        DateTime?   @db.Timestamptz(6)
+  carryForwardFromId String?     @db.Uuid
+  createdAt          DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime    @updatedAt @db.Timestamptz(6)
+  version            Int         @default(1)
+  plan               Plan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  goal               Goal?       @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  parent             PlanItem?   @relation("PlanItemTree", fields: [parentItemId], references: [id], onDelete: SetNull)
+  children           PlanItem[]  @relation("PlanItemTree")
+  timeBlocks         TimeBlock[]
+
+  @@unique([planId, position])
+  @@index([goalId])
+  @@index([planId, status])
+  @@map("plan_items")
+}
+
+model TimeBlock {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  planItemId String?   @db.Uuid
+  title      String    @db.VarChar(200)
+  startsAt   DateTime  @db.Timestamptz(6)
+  endsAt     DateTime  @db.Timestamptz(6)
+  timeZone   String    @db.VarChar(80)
+  locked     Boolean   @default(false)
+  source     String    @default("FOCUSED") @db.VarChar(30)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
+  version    Int       @default(1)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planItem   PlanItem? @relation(fields: [planItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, startsAt, endsAt])
+  @@index([planItemId])
+  @@map("time_blocks")
+}
+
+model ScheduleProposal {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  inputVersion   String           @db.VarChar(100)
+  status         AIProposalStatus @default(PENDING)
+  constraints    Json
+  proposedBlocks Json
+  explanation    Json
+  expiresAt      DateTime         @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  decidedAt      DateTime?        @db.Timestamptz(6)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, expiresAt])
+  @@map("schedule_proposals")
+}
+
+model CalendarConnection {
+  id                    String          @id @default(uuid()) @db.Uuid
+  userId                String          @db.Uuid
+  provider              String          @db.VarChar(50)
+  providerAccountId     String          @db.VarChar(255)
+  accessTokenEncrypted  Bytes
+  refreshTokenEncrypted Bytes?
+  scopes                String[]
+  syncCursorEncrypted   Bytes?
+  status                String          @default("ACTIVE") @db.VarChar(30)
+  lastSyncedAt          DateTime?       @db.Timestamptz(6)
+  createdAt             DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime        @updatedAt @db.Timestamptz(6)
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events                CalendarEvent[]
+
+  @@unique([userId, provider, providerAccountId])
+  @@index([userId, status])
+  @@map("calendar_connections")
+}
+
+model CalendarEvent {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String              @db.Uuid
+  connectionId  String?             @db.Uuid
+  externalId    String?             @db.VarChar(255)
+  title         String              @db.VarChar(240)
+  startsAt      DateTime            @db.Timestamptz(6)
+  endsAt        DateTime            @db.Timestamptz(6)
+  timeZone      String              @db.VarChar(80)
+  busy          Boolean             @default(true)
+  sourceVersion String?             @db.VarChar(120)
+  deletedAt     DateTime?           @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(6)
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection    CalendarConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, externalId])
+  @@index([userId, startsAt, endsAt])
+  @@map("calendar_events")
+}
+
+model FocusSession {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @db.Uuid
+  goalId         String?        @db.Uuid
+  kind           FocusKind
+  status         FocusStatus    @default(RUNNING)
+  intent         String         @db.VarChar(300)
+  plannedSeconds Int
+  startedAt      DateTime       @db.Timestamptz(6)
+  completedAt    DateTime?      @db.Timestamptz(6)
+  abandonedAt    DateTime?      @db.Timestamptz(6)
+  outcome        String?        @db.Text
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+  version        Int            @default(1)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal           Goal?          @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  pauses         SessionPause[]
+  interruptions  Interruption[]
+
+  @@index([userId, startedAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, status])
+  @@map("focus_sessions")
+}
+
+model SessionPause {
+  id             String       @id @default(uuid()) @db.Uuid
+  focusSessionId String       @db.Uuid
+  startedAt      DateTime     @db.Timestamptz(6)
+  endedAt        DateTime?    @db.Timestamptz(6)
+  reason         String?      @db.VarChar(160)
+  focusSession   FocusSession @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+
+  @@index([focusSessionId, startedAt])
+  @@map("session_pauses")
+}
+
+model Interruption {
+  id             String       @id @default(uuid()) @db.Uuid
+  focusSessionId String       @db.Uuid
+  occurredAt     DateTime     @default(now()) @db.Timestamptz(6)
+  category       String       @db.VarChar(60)
+  note           String?      @db.VarChar(500)
+  resumed        Boolean?
+  focusSession   FocusSession @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+
+  @@index([focusSessionId, occurredAt])
+  @@map("interruptions")
+}
+
+model Habit {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @db.Uuid
+  title       String       @db.VarChar(160)
+  kind        HabitKind
+  targetValue Decimal?     @db.Decimal(18, 4)
+  unit        String?      @db.VarChar(40)
+  schedule    Json
+  startsOn    DateTime     @db.Date
+  pausedAt    DateTime?    @db.Timestamptz(6)
+  archivedAt  DateTime?    @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
+  version     Int          @default(1)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries     HabitEntry[]
+
+  @@index([userId, archivedAt])
+  @@map("habits")
+}
+
+model HabitEntry {
+  id            String      @id @default(uuid()) @db.Uuid
+  habitId       String      @db.Uuid
+  localDate     DateTime    @db.Date
+  timeZone      String      @db.VarChar(80)
+  value         Decimal?    @db.Decimal(18, 4)
+  completed     Boolean?
+  skippedReason String?     @db.VarChar(160)
+  source        EntrySource @default(MANUAL)
+  recordedAt    DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+  version       Int         @default(1)
+  habit         Habit       @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, localDate])
+  @@index([habitId, recordedAt(sort: Desc)])
+  @@map("habit_entries")
+}
+
+model TrackerItem {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  kind       TrackerKind
+  title      String         @db.VarChar(240)
+  status     String         @default("ACTIVE") @db.VarChar(40)
+  metadata   Json           @default("{}")
+  startedOn  DateTime?      @db.Date
+  targetDate DateTime?      @db.Date
+  archivedAt DateTime?      @db.Timestamptz(6)
+  createdAt  DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime       @updatedAt @db.Timestamptz(6)
+  version    Int            @default(1)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries    TrackerEntry[]
+
+  @@index([userId, kind, status])
+  @@map("tracker_items")
+}
+
+model TrackerEntry {
+  id              String      @id @default(uuid()) @db.Uuid
+  trackerItemId   String      @db.Uuid
+  occurredAt      DateTime    @db.Timestamptz(6)
+  localDate       DateTime    @db.Date
+  timeZone        String      @db.VarChar(80)
+  durationSeconds Int?
+  quantity        Decimal?    @db.Decimal(18, 4)
+  unit            String?     @db.VarChar(40)
+  rating          Int?
+  note            String?     @db.Text
+  data            Json        @default("{}")
+  source          EntrySource @default(MANUAL)
+  sourceKey       String?     @db.VarChar(255)
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
+  version         Int         @default(1)
+  trackerItem     TrackerItem @relation(fields: [trackerItemId], references: [id], onDelete: Cascade)
+
+  @@unique([trackerItemId, source, sourceKey])
+  @@index([trackerItemId, occurredAt(sort: Desc), id(sort: Desc)])
+  @@index([localDate])
+  @@map("tracker_entries")
+}
+
+model JournalEntry {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @db.Uuid
+  localDate DateTime          @db.Date
+  timeZone  String            @db.VarChar(80)
+  title     String?           @db.VarChar(240)
+  body      String            @db.Text
+  format    String            @default("MARKDOWN") @db.VarChar(20)
+  status    DocumentStatus    @default(ACTIVE)
+  createdAt DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime          @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime?         @db.Timestamptz(6)
+  version   Int               @default(1)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revisions JournalRevision[]
+
+  @@index([userId, localDate(sort: Desc), id(sort: Desc)])
+  @@map("journal_entries")
+}
+
+model JournalRevision {
+  id             String       @id @default(uuid()) @db.Uuid
+  journalEntryId String       @db.Uuid
+  revision       Int
+  body           String       @db.Text
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([journalEntryId, revision])
+  @@map("journal_revisions")
+}
+
+model Reflection {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  type        String    @db.VarChar(40)
+  periodStart DateTime  @db.Date
+  periodEnd   DateTime  @db.Date
+  responses   Json
+  lessons     Json      @default("[]")
+  experiments Json      @default("[]")
+  completedAt DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  version     Int       @default(1)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, periodStart])
+  @@index([userId, periodStart(sort: Desc)])
+  @@map("reflections")
+}
+
+model Note {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  title     String         @db.VarChar(240)
+  body      String         @db.Text
+  status    DocumentStatus @default(ACTIVE)
+  tags      String[]
+  createdAt DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime       @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime?      @db.Timestamptz(6)
+  version   Int            @default(1)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt(sort: Desc), id(sort: Desc)])
+  @@map("notes")
+}
+
+model Bookmark {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  url              String    @db.Text
+  canonicalUrlHash String    @db.Char(64)
+  title            String?   @db.VarChar(500)
+  description      String?   @db.Text
+  tags             String[]
+  metadata         Json      @default("{}")
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6)
+  archivedAt       DateTime? @db.Timestamptz(6)
+  version          Int       @default(1)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, canonicalUrlHash])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("bookmarks")
+}
+
+model Resource {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String?      @db.Uuid
+  kind         ResourceKind
+  title        String       @db.VarChar(500)
+  canonicalUrl String?      @db.Text
+  providerKey  String?      @db.VarChar(255)
+  description  String?      @db.Text
+  provenance   Json         @default("{}")
+  tags         String[]
+  publishedAt  DateTime?    @db.Timestamptz(6)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(6)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, providerKey])
+  @@index([kind, publishedAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("resources")
+}
+
+model AIConversation {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @db.Uuid
+  purpose    String      @db.VarChar(60)
+  title      String?     @db.VarChar(200)
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime    @updatedAt @db.Timestamptz(6)
+  archivedAt DateTime?   @db.Timestamptz(6)
+  version    Int         @default(1)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   AIMessage[]
+  runs       AIRun[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id             String         @id @default(uuid()) @db.Uuid
+  conversationId String         @db.Uuid
+  role           String         @db.VarChar(20)
+  content        String         @db.Text
+  citations      Json           @default("[]")
+  model          String?        @db.VarChar(100)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt, id])
+  @@map("ai_messages")
+}
+
+model AIRun {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  conversationId String?          @db.Uuid
+  kind           AIRunKind
+  status         AIRunStatus      @default(QUEUED)
+  promptVersion  String           @db.VarChar(80)
+  policyVersion  String           @db.VarChar(80)
+  modelAlias     String           @db.VarChar(60)
+  provider       String?          @db.VarChar(60)
+  model          String?          @db.VarChar(100)
+  inputManifest  Json             @default("{}")
+  output         Json?
+  evaluation     Json?
+  inputTokens    Int?
+  outputTokens   Int?
+  costMicros     BigInt?
+  queuedAt       DateTime         @default(now()) @db.Timestamptz(6)
+  startedAt      DateTime?        @db.Timestamptz(6)
+  completedAt    DateTime?        @db.Timestamptz(6)
+  expiresAt      DateTime?        @db.Timestamptz(6)
+  failureCode    String?          @db.VarChar(100)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   AIConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  contextGrants  AIContextGrant[]
+  proposals      AIProposal[]
+
+  @@index([userId, kind, queuedAt(sort: Desc)])
+  @@index([status, queuedAt])
+  @@map("ai_runs")
+}
+
+model AIContextGrant {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  aiRunId       String?   @db.Uuid
+  sourceType    String    @db.VarChar(80)
+  sourceId      String?   @db.Uuid
+  scope         Json
+  sourceVersion String?   @db.VarChar(100)
+  grantedAt     DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt     DateTime  @db.Timestamptz(6)
+  revokedAt     DateTime? @db.Timestamptz(6)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiRun         AIRun?    @relation(fields: [aiRunId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([aiRunId])
+  @@map("ai_context_grants")
+}
+
+model AIProposal {
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @db.Uuid
+  aiRunId       String           @db.Uuid
+  targetType    String           @db.VarChar(80)
+  targetId      String?          @db.Uuid
+  targetVersion Int?
+  operation     String           @db.VarChar(80)
+  patch         Json
+  rationale     String?          @db.Text
+  status        AIProposalStatus @default(PENDING)
+  expiresAt     DateTime         @db.Timestamptz(6)
+  decidedAt     DateTime?        @db.Timestamptz(6)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(6)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiRun         AIRun            @relation(fields: [aiRunId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, expiresAt])
+  @@map("ai_proposals")
+}
+
+model Reminder {
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @db.Uuid
+  title            String               @db.VarChar(200)
+  body             String?              @db.VarChar(500)
+  status           ReminderStatus       @default(ACTIVE)
+  timeZone         String               @db.VarChar(80)
+  localTime        String?              @db.VarChar(12)
+  rrule            String?              @db.Text
+  oneTimeAt        DateTime?            @db.Timestamptz(6)
+  quietHoursPolicy Json                 @default("{}")
+  deliveryPolicy   Json                 @default("{}")
+  ruleVersion      Int                  @default(1)
+  expandedThrough  DateTime?            @db.Timestamptz(6)
+  createdAt        DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime             @updatedAt @db.Timestamptz(6)
+  version          Int                  @default(1)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurrences      ReminderOccurrence[]
+
+  @@index([userId, status])
+  @@index([status, expandedThrough])
+  @@map("reminders")
+}
+
+model ReminderOccurrence {
+  id            String           @id @default(uuid()) @db.Uuid
+  reminderId    String           @db.Uuid
+  occurrenceKey String           @db.VarChar(180)
+  scheduledFor  DateTime         @db.Timestamptz(6)
+  localDate     DateTime         @db.Date
+  ruleVersion   Int
+  status        OccurrenceStatus @default(PENDING)
+  snoozedUntil  DateTime?        @db.Timestamptz(6)
+  expiresAt     DateTime?        @db.Timestamptz(6)
+  completedAt   DateTime?        @db.Timestamptz(6)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(6)
+  reminder      Reminder         @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@unique([reminderId, occurrenceKey])
+  @@index([status, scheduledFor])
+  @@map("reminder_occurrences")
+}
+
+model NotificationPreference {
+  userId        String   @id @db.Uuid
+  categories    Json     @default("{}")
+  quietHours    Json     @default("{}")
+  digestPolicy  Json     @default("{}")
+  previewPolicy String   @default("MINIMAL") @db.VarChar(30)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  version       Int      @default(1)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model Notification {
+  id                 String              @id @default(uuid()) @db.Uuid
+  userId             String              @db.Uuid
+  occurrenceId       String?             @db.Uuid
+  category           String              @db.VarChar(60)
+  title              String              @db.VarChar(160)
+  body               String?             @db.VarChar(300)
+  deepLink           String?             @db.VarChar(500)
+  deduplicationKey   String              @db.VarChar(180)
+  preferenceSnapshot Json
+  readAt             DateTime?           @db.Timestamptz(6)
+  archivedAt         DateTime?           @db.Timestamptz(6)
+  expiresAt          DateTime?           @db.Timestamptz(6)
+  createdAt          DateTime            @default(now()) @db.Timestamptz(6)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurrence         ReminderOccurrence? @relation(fields: [occurrenceId], references: [id], onDelete: SetNull)
+  deliveryAttempts   DeliveryAttempt[]
+
+  @@unique([userId, deduplicationKey])
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model DeliveryAttempt {
+  id                String              @id @default(uuid()) @db.Uuid
+  notificationId    String              @db.Uuid
+  channel           NotificationChannel
+  provider          String              @db.VarChar(50)
+  attempt           Int
+  status            DeliveryStatus
+  providerMessageId String?             @db.VarChar(255)
+  errorCode         String?             @db.VarChar(100)
+  attemptedAt       DateTime            @default(now()) @db.Timestamptz(6)
+  nextAttemptAt     DateTime?           @db.Timestamptz(6)
+  notification      Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, channel, attempt])
+  @@index([status, nextAttemptAt])
+  @@map("delivery_attempts")
+}
+
+model AchievementDefinition {
+  id          String             @id @default(uuid()) @db.Uuid
+  key         String             @unique @db.VarChar(100)
+  version     Int
+  title       String             @db.VarChar(160)
+  description String             @db.Text
+  rule        Json
+  active      Boolean            @default(true)
+  createdAt   DateTime           @default(now()) @db.Timestamptz(6)
+  awards      AchievementAward[]
+
+  @@unique([key, version])
+  @@map("achievement_definitions")
+}
+
+model AchievementAward {
+  id            String                @id @default(uuid()) @db.Uuid
+  userId        String                @db.Uuid
+  definitionId  String                @db.Uuid
+  sourceEventId String                @db.VarChar(180)
+  awardedAt     DateTime              @default(now()) @db.Timestamptz(6)
+  revokedAt     DateTime?             @db.Timestamptz(6)
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  definition    AchievementDefinition @relation(fields: [definitionId], references: [id])
+
+  @@unique([userId, definitionId, sourceEventId])
+  @@index([userId, awardedAt(sort: Desc)])
+  @@map("achievement_awards")
+}
+
+model XPLedgerEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  amount        Int
+  ruleKey       String   @db.VarChar(100)
+  ruleVersion   Int
+  sourceEventId String   @db.VarChar(180)
+  reversalOfId  String?  @db.Uuid
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceEventId, ruleKey])
+  @@index([userId, createdAt])
+  @@map("xp_ledger_entries")
+}
+
+model LevelDefinition {
+  id        String      @id @default(uuid()) @db.Uuid
+  level     Int         @unique
+  minimumXp Int         @unique
+  title     String      @db.VarChar(100)
+  active    Boolean     @default(true)
+  createdAt DateTime    @default(now()) @db.Timestamptz(6)
+  users     UserLevel[]
+
+  @@map("level_definitions")
+}
+
+model UserLevel {
+  userId            String          @id @db.Uuid
+  levelDefinitionId String          @db.Uuid
+  totalXp           Int             @default(0)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  levelDefinition   LevelDefinition @relation(fields: [levelDefinitionId], references: [id])
+
+  @@index([levelDefinitionId])
+  @@map("user_levels")
+}
+
+model Streak {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  subjectType       String    @db.VarChar(60)
+  subjectId         String    @db.Uuid
+  ruleVersion       Int
+  currentCount      Int       @default(0)
+  bestCount         Int       @default(0)
+  lastQualifiedDate DateTime? @db.Date
+  pausedUntil       DateTime? @db.Date
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subjectType, subjectId])
+  @@index([userId, updatedAt])
+  @@map("streaks")
+}
+
+model Challenge {
+  id          String                @id @default(uuid()) @db.Uuid
+  key         String                @unique @db.VarChar(100)
+  title       String                @db.VarChar(180)
+  description String                @db.Text
+  status      ChallengeStatus       @default(DRAFT)
+  startsAt    DateTime              @db.Timestamptz(6)
+  endsAt      DateTime              @db.Timestamptz(6)
+  ruleVersion Int
+  eligibility Json
+  metricRule  Json
+  rewardRule  Json?
+  createdAt   DateTime              @default(now()) @db.Timestamptz(6)
+  enrollments ChallengeEnrollment[]
+
+  @@index([status, startsAt, endsAt])
+  @@map("challenges")
+}
+
+model ChallengeEnrollment {
+  id          String    @id @default(uuid()) @db.Uuid
+  challengeId String    @db.Uuid
+  userId      String    @db.Uuid
+  ruleVersion Int
+  progress    Decimal   @default(0) @db.Decimal(18, 4)
+  status      String    @default("ENROLLED") @db.VarChar(30)
+  enrolledAt  DateTime  @default(now()) @db.Timestamptz(6)
+  completedAt DateTime? @db.Timestamptz(6)
+  withdrawnAt DateTime? @db.Timestamptz(6)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId, status])
+  @@map("challenge_enrollments")
+}
+
+model MetricEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  name          String   @db.VarChar(100)
+  occurredAt    DateTime @db.Timestamptz(6)
+  localDate     DateTime @db.Date
+  value         Decimal? @db.Decimal(20, 6)
+  dimensions    Json     @default("{}")
+  sourceEventId String   @db.VarChar(180)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceEventId, name])
+  @@index([userId, name, occurredAt(sort: Desc)])
+  @@map("metric_events")
+}
+
+model DailyMetricSnapshot {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  localDate     DateTime @db.Date
+  metricVersion String   @db.VarChar(40)
+  values        Json
+  computedAt    DateTime @default(now()) @db.Timestamptz(6)
+  sourceThrough DateTime @db.Timestamptz(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate, metricVersion])
+  @@index([userId, localDate(sort: Desc)])
+  @@map("daily_metric_snapshots")
+}
+
+model ReportJob {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  type          String    @db.VarChar(60)
+  status        JobStatus @default(QUEUED)
+  parameters    Json
+  result        Json?
+  schemaVersion String    @db.VarChar(40)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  startedAt     DateTime? @db.Timestamptz(6)
+  completedAt   DateTime? @db.Timestamptz(6)
+  expiresAt     DateTime? @db.Timestamptz(6)
+  failureCode   String?   @db.VarChar(100)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("report_jobs")
+}
+
+model ExportJob {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  status        JobStatus @default(QUEUED)
+  categories    String[]
+  rangeStart    DateTime? @db.Timestamptz(6)
+  rangeEnd      DateTime? @db.Timestamptz(6)
+  schemaVersion String    @db.VarChar(40)
+  assetProvider String?   @db.VarChar(40)
+  assetId       String?   @db.VarChar(255)
+  checksum      String?   @db.Char(64)
+  sizeBytes     BigInt?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  completedAt   DateTime? @db.Timestamptz(6)
+  expiresAt     DateTime? @db.Timestamptz(6)
+  downloadedAt  DateTime? @db.Timestamptz(6)
+  failureCode   String?   @db.VarChar(100)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([expiresAt])
+  @@map("export_jobs")
+}
+
+model IdempotencyRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  route       String   @db.VarChar(160)
+  key         String   @db.VarChar(160)
+  requestHash String   @db.Char(64)
+  statusCode  Int?
+  response    Json?
+  resourceId  String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  expiresAt   DateTime @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, route, key])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+model WebhookInbox {
+  id              String    @id @default(uuid()) @db.Uuid
+  provider        String    @db.VarChar(60)
+  externalEventId String    @db.VarChar(255)
+  payloadHash     String    @db.Char(64)
+  receivedAt      DateTime  @default(now()) @db.Timestamptz(6)
+  processedAt     DateTime? @db.Timestamptz(6)
+  status          String    @default("RECEIVED") @db.VarChar(30)
+  failureCode     String?   @db.VarChar(100)
+
+  @@unique([provider, externalEventId])
+  @@index([status, receivedAt])
+  @@map("webhook_inbox")
+}
+
+model OutboxEvent {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String?   @db.Uuid
+  aggregateType    String    @db.VarChar(80)
+  aggregateId      String    @db.Uuid
+  aggregateVersion Int
+  eventType        String    @db.VarChar(120)
+  eventVersion     Int       @default(1)
+  payload          Json
+  occurredAt       DateTime  @default(now()) @db.Timestamptz(6)
+  publishedAt      DateTime? @db.Timestamptz(6)
+  publishAttempts  Int       @default(0)
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([aggregateType, aggregateId, aggregateVersion, eventType])
+  @@index([publishedAt, occurredAt, id])
+  @@index([userId, occurredAt])
+  @@map("outbox_events")
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorUserId   String?  @db.Uuid
+  actorType     String   @db.VarChar(30)
+  action        String   @db.VarChar(120)
+  targetType    String?  @db.VarChar(80)
+  targetId      String?  @db.Uuid
+  reasonCode    String?  @db.VarChar(80)
+  correlationId String   @db.VarChar(80)
+  ipPrefix      String?  @db.VarChar(64)
+  metadata      Json     @default("{}")
+  occurredAt    DateTime @default(now()) @db.Timestamptz(6)
+  actor         User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, occurredAt(sort: Desc)])
+  @@index([targetType, targetId, occurredAt(sort: Desc)])
+  @@index([correlationId])
+  @@map("audit_events")
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique @db.VarChar(120)
+  description String   @db.Text
+  enabled     Boolean  @default(false)
+  rules       Json     @default("{}")
+  version     Int      @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("feature_flags")
+}
