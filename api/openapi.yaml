@@ -29,6 +29,8 @@ tags:
     description: Member-owned profile, locale, time-zone, and preference resources.
   - name: Dashboard
     description: Owner-scoped, privacy-filtered Dashboard projections and widget preferences.
+  - name: Habits
+    description: Owner-scoped habits, immutable schedule versions, occurrences, and correction history.
   - name: Daily Focus
     description: Daily commitments, capacity, and close-out decisions.
   - name: Focus Sessions
@@ -131,6 +133,174 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /habits:
+    get:
+      tags: [Habits]
+      summary: List the current member's habits
+      operationId: listHabits
+      description: Expands a bounded occurrence window in the member's time zone before returning active and archived habits.
+      responses:
+        "200":
+          description: Habit list for the member-local day
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/HabitList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [Habits]
+      summary: Create a habit
+      operationId: createHabit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateHabitRequest" }
+      responses:
+        "201": { $ref: "#/components/responses/HabitResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /habits/{habitId}:
+    parameters:
+      - { $ref: "#/components/parameters/HabitId" }
+    patch:
+      tags: [Habits]
+      summary: Change a habit from an effective local date
+      operationId: updateHabit
+      description: Creates an immutable schedule version; historical occurrences and entries are not rewritten.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateHabitRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /habits/{habitId}/entries:
+    parameters:
+      - { $ref: "#/components/parameters/HabitId" }
+    get:
+      tags: [Habits]
+      summary: Read bounded habit history
+      operationId: getHabitHistory
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Reverse-chronological occurrence history
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/HabitHistory" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+    post:
+      tags: [Habits]
+      summary: Record or correct a habit entry
+      operationId: recordHabitEntry
+      description: clientCommandId makes retries idempotent; expectedVersion is required for corrections.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HabitCheckInRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /habits/{habitId}/entries/undo:
+    parameters:
+      - { $ref: "#/components/parameters/HabitId" }
+    post:
+      tags: [Habits]
+      summary: Undo today's habit entry
+      operationId: undoHabitEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HabitUndoRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /habits/{habitId}/pause:
+    parameters:
+      - { $ref: "#/components/parameters/HabitId" }
+    post:
+      tags: [Habits]
+      summary: Pause a habit without harming consistency
+      operationId: pauseHabit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HabitPauseRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /habits/{habitId}/resume:
+    parameters:
+      - { $ref: "#/components/parameters/HabitId" }
+    post:
+      tags: [Habits]
+      summary: Resume a paused habit after the member-local day
+      operationId: resumeHabit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HabitStateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /habits/{habitId}/archive:
+    parameters:
+      - { $ref: "#/components/parameters/HabitId" }
+    post:
+      tags: [Habits]
+      summary: Archive a habit
+      operationId: archiveHabit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HabitStateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [Habits]
+      summary: Restore an archived habit
+      operationId: restoreHabit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HabitStateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/HabitResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /auth/register:
     post:
       tags: [Authentication]
@@ -1044,6 +1214,11 @@ components:
       in: path
       required: true
       schema: { $ref: "#/components/schemas/Uuid" }
+    HabitId:
+      name: habitId
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/Uuid" }
   responses:
     BadRequest:
       description: The request body is malformed or a one-time security token is invalid
@@ -1101,7 +1276,261 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+    HabitResponse:
+      description: Current habit representation
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [data]
+            properties:
+              data: { $ref: "#/components/schemas/Habit" }
   schemas:
+    HabitKind:
+      type: string
+      enum: [boolean, count, duration, avoidance]
+    HabitTarget:
+      type: object
+      additionalProperties: false
+      required: [value, unit]
+      properties:
+        value: { type: [number, "null"], minimum: 0, maximum: 1000000 }
+        unit: { type: [string, "null"], maxLength: 40 }
+    HabitSchedule:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [type]
+          properties:
+            type: { type: string, const: daily }
+        - type: object
+          additionalProperties: false
+          required: [type, weekdays]
+          properties:
+            type: { type: string, const: weekdays }
+            weekdays:
+              type: array
+              minItems: 1
+              maxItems: 7
+              uniqueItems: true
+              items: { type: integer, minimum: 0, maximum: 6 }
+        - type: object
+          additionalProperties: false
+          required: [type, everyDays, anchorDate]
+          properties:
+            type: { type: string, const: interval }
+            everyDays: { type: integer, minimum: 2, maximum: 30 }
+            anchorDate: { type: string, format: date }
+        - type: object
+          additionalProperties: false
+          required: [type, dates]
+          properties:
+            type: { type: string, const: custom_dates }
+            dates:
+              type: array
+              minItems: 1
+              maxItems: 128
+              uniqueItems: true
+              items: { type: string, format: date }
+    HabitEntry:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          value,
+          completed,
+          skippedReason,
+          note,
+          evidenceRef,
+          recordedAt,
+          correctedAt,
+          undoneAt,
+          version,
+        ]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        value: { type: [number, "null"] }
+        completed: { type: [boolean, "null"] }
+        skippedReason: { type: [string, "null"], maxLength: 160 }
+        note: { type: [string, "null"], maxLength: 500 }
+        evidenceRef: { type: [string, "null"], format: uuid }
+        recordedAt: { type: string, format: date-time }
+        correctedAt: { type: [string, "null"], format: date-time }
+        undoneAt: { type: [string, "null"], format: date-time }
+        version: { type: integer, minimum: 1 }
+    HabitOccurrence:
+      type: object
+      additionalProperties: false
+      required: [id, localDate, status, target, entry]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        localDate: { type: string, format: date }
+        status: { type: string, enum: [due, completed, skipped, excused] }
+        target: { $ref: "#/components/schemas/HabitTarget" }
+        entry:
+          oneOf:
+            - { $ref: "#/components/schemas/HabitEntry" }
+            - { type: "null" }
+    Habit:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          title,
+          kind,
+          startsOn,
+          paused,
+          archived,
+          version,
+          scheduleVersion,
+          today,
+          consistency,
+        ]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        kind: { $ref: "#/components/schemas/HabitKind" }
+        startsOn: { type: string, format: date }
+        paused: { type: boolean }
+        archived: { type: boolean }
+        version: { type: integer, minimum: 1 }
+        scheduleVersion:
+          type: object
+          additionalProperties: false
+          required:
+            [
+              id,
+              revision,
+              schedule,
+              target,
+              timeZone,
+              effectiveFrom,
+              effectiveTo,
+            ]
+          properties:
+            id: { $ref: "#/components/schemas/Uuid" }
+            revision: { type: integer, minimum: 1 }
+            schedule: { $ref: "#/components/schemas/HabitSchedule" }
+            target: { $ref: "#/components/schemas/HabitTarget" }
+            timeZone: { type: string, maxLength: 80 }
+            effectiveFrom: { type: string, format: date }
+            effectiveTo: { type: [string, "null"], format: date }
+        today:
+          oneOf:
+            - { $ref: "#/components/schemas/HabitOccurrence" }
+            - { type: "null" }
+        consistency:
+          type: object
+          additionalProperties: false
+          required: [dueCount, completedCount, percentage, currentStreak]
+          properties:
+            dueCount: { type: integer, minimum: 0 }
+            completedCount: { type: integer, minimum: 0 }
+            percentage: { type: integer, minimum: 0, maximum: 100 }
+            currentStreak: { type: integer, minimum: 0 }
+    HabitList:
+      type: object
+      additionalProperties: false
+      required: [localDate, timeZone, active, archived, syncToken]
+      properties:
+        localDate: { type: string, format: date }
+        timeZone: { type: string, maxLength: 80 }
+        active:
+          {
+            type: array,
+            maxItems: 100,
+            items: { $ref: "#/components/schemas/Habit" },
+          }
+        archived:
+          {
+            type: array,
+            maxItems: 150,
+            items: { $ref: "#/components/schemas/Habit" },
+          }
+        syncToken: { type: string, format: date-time }
+    HabitHistory:
+      type: object
+      additionalProperties: false
+      required: [habit, occurrences, nextCursor]
+      properties:
+        habit: { $ref: "#/components/schemas/Habit" }
+        occurrences:
+          {
+            type: array,
+            maxItems: 42,
+            items: { $ref: "#/components/schemas/HabitOccurrence" },
+          }
+        nextCursor: { type: [string, "null"], format: date }
+    HabitDraftFields:
+      type: object
+      required: [title, kind, target, schedule]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        kind: { $ref: "#/components/schemas/HabitKind" }
+        target: { $ref: "#/components/schemas/HabitTarget" }
+        schedule: { $ref: "#/components/schemas/HabitSchedule" }
+    CreateHabitRequest:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/HabitDraftFields" }
+        - type: object
+          required: [startsOn, clientCommandId]
+          properties:
+            startsOn: { type: string, format: date }
+            clientCommandId: { $ref: "#/components/schemas/Uuid" }
+    UpdateHabitRequest:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/HabitDraftFields" }
+        - type: object
+          required: [effectiveOn, expectedVersion]
+          properties:
+            effectiveOn: { type: string, format: date }
+            expectedVersion: { type: integer, minimum: 1 }
+    HabitCheckInRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          localDate,
+          value,
+          completed,
+          skippedReason,
+          note,
+          evidenceRef,
+          clientCommandId,
+        ]
+      properties:
+        localDate: { type: string, format: date }
+        value: { type: [number, "null"], minimum: 0, maximum: 1000000 }
+        completed: { type: [boolean, "null"] }
+        skippedReason: { type: [string, "null"], minLength: 1, maxLength: 160 }
+        note: { type: [string, "null"], maxLength: 500 }
+        evidenceRef: { type: [string, "null"], format: uuid }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+        expectedVersion: { type: integer, minimum: 1 }
+    HabitStateRequest:
+      type: object
+      required: [expectedVersion]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+    HabitPauseRequest:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/HabitStateRequest" }
+        - type: object
+          properties:
+            reason: { type: [string, "null"], maxLength: 160 }
+    HabitUndoRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, clientCommandId]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
     DashboardWidgetKey:
       type: string
       enum:

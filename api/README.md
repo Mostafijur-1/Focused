@@ -24,7 +24,7 @@ The CI quality gate runs the same command. Route handlers must update their Zod 
 
 ## Implemented endpoints
 
-Milestones 1–4 implement health, registration, email verification, sign-in, refresh, logout, password recovery/reset, OAuth start/callback, member-owned session listing/revocation, the owner-scoped Dashboard projection, and Dashboard widget preferences. The canonical paths and schemas are in OpenAPI; operational details are in [`../docs/authentication.md`](../docs/authentication.md) and [`../docs/dashboard.md`](../docs/dashboard.md).
+Milestones 1–5 implement health, registration, email verification, sign-in, refresh, logout, password recovery/reset, OAuth start/callback, member-owned session listing/revocation, Dashboard projections/preferences, and the owner-scoped Habit System. Habit creation/check-ins use body-level `clientCommandId` values for retry safety and `expectedVersion` for explicit concurrency. The canonical paths and schemas are in OpenAPI; operational details are in [`../docs/authentication.md`](../docs/authentication.md), [`../docs/dashboard.md`](../docs/dashboard.md), and [`../docs/habits.md`](../docs/habits.md).
 
 Other paths remain approved forward contracts and are implemented milestone by milestone. Unimplemented contracts must not be deployed as handlers returning misleading success states.
 
