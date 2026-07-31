@@ -201,6 +201,7 @@ export async function appendOutboxEvent(
       ...event,
       eventVersion: event.eventVersion ?? 1,
       payload: event.payload as Prisma.InputJsonValue,
+      nextAttemptAt: event.occurredAt,
     },
     select: { id: true },
   });
@@ -213,7 +214,7 @@ export class PrismaWebhookInboxStore implements WebhookInboxStore {
   async receive(event: NewWebhookEvent): Promise<WebhookReceipt> {
     try {
       const created = await this.prisma.webhookInbox.create({
-        data: event,
+        data: { ...event, nextAttemptAt: event.receivedAt },
         select: { id: true },
       });
       return { kind: "accepted", inboxId: created.id };
