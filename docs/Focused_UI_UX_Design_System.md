@@ -8,18 +8,18 @@ lang: en-US
 
 # Document Control
 
-| Field | Value |
-|---|---|
-| Document | Focused Bangla-First UI/UX Design System |
-| Version | 1.0 |
-| Status | Implementation baseline |
-| Product | Focused FocusOS |
-| Default locale | `bn-BD` — human-authored natural Bangla |
-| Secondary locale | `en` |
-| Target surfaces | Responsive web, PWA, future mobile, Admin |
-| Design owner | Product Design with Product and Accessibility review |
-| Engineering owner | Frontend Platform / Design System |
-| Review cadence | Each material brand, accessibility, or component change |
+| Field             | Value                                                   |
+| ----------------- | ------------------------------------------------------- |
+| Document          | Focused Bangla-First UI/UX Design System                |
+| Version           | 1.0                                                     |
+| Status            | Implementation baseline                                 |
+| Product           | Focused FocusOS                                         |
+| Default locale    | `bn-BD` — human-authored natural Bangla                 |
+| Secondary locale  | `en`                                                    |
+| Target surfaces   | Responsive web, PWA, future mobile, Admin               |
+| Design owner      | Product Design with Product and Accessibility review    |
+| Engineering owner | Frontend Platform / Design System                       |
+| Review cadence    | Each material brand, accessibility, or component change |
 
 # 1. Design North Star
 
@@ -61,13 +61,13 @@ The interface is not a wall of productivity metrics. It helps the member answer 
 
 ## 2.1 Personality
 
-| Attribute | Expression | Avoid |
-|---|---|---|
-| Focused | strong hierarchy, one bright action, generous space | competing highlights, noisy gradients |
-| Premium | precise typography, restrained shadows, crisp borders | excessive blur, glossy chrome, fake luxury |
-| Human | warm natural Bangla, forgiving empty states | robotic copy, blame, productivity guilt |
-| Intelligent | contextual help, explainable AI proposals | mysterious automation, jargon-heavy UI |
-| Disciplined | consistent spacing, predictable states | novelty layouts and inconsistent controls |
+| Attribute   | Expression                                            | Avoid                                      |
+| ----------- | ----------------------------------------------------- | ------------------------------------------ |
+| Focused     | strong hierarchy, one bright action, generous space   | competing highlights, noisy gradients      |
+| Premium     | precise typography, restrained shadows, crisp borders | excessive blur, glossy chrome, fake luxury |
+| Human       | warm natural Bangla, forgiving empty states           | robotic copy, blame, productivity guilt    |
+| Intelligent | contextual help, explainable AI proposals             | mysterious automation, jargon-heavy UI     |
+| Disciplined | consistent spacing, predictable states                | novelty layouts and inconsistent controls  |
 
 ## 2.2 Logo Treatment
 
@@ -81,41 +81,41 @@ Neon Pink is functional, not decorative. It identifies the primary action, activ
 
 ### Light theme
 
-| Token | Value | Use |
-|---|---|---|
-| Background | `#F8F7FB` | page canvas |
-| Foreground | `#17131A` | primary text |
-| Card | `#FFFFFF` | normal content surface |
-| Muted surface | `#F1EFF4` | secondary blocks, skeletons |
-| Muted text | `#66616C` | descriptions and metadata |
-| Border | `#E4DFE8` | cards, fields, separators |
-| Primary | `#E60076` | primary button, active control, progress |
-| Primary hover | `#C40063` | hover and high-contrast pink text |
-| Primary foreground | `#FFFFFF` | text on primary; contrast target 4.5:1+ |
-| Accent | `#7C3AED` | AI, secondary highlight, selected insight |
-| Accent foreground | `#FFFFFF` | text on accent |
-| Success | `#0F7A4F` | completed and healthy state |
-| Warning | `#9A5500` | caution and approaching limit |
-| Destructive | `#C62828` | destructive action and blocking error |
+| Token              | Value     | Use                                       |
+| ------------------ | --------- | ----------------------------------------- |
+| Background         | `#F8F7FB` | page canvas                               |
+| Foreground         | `#17131A` | primary text                              |
+| Card               | `#FFFFFF` | normal content surface                    |
+| Muted surface      | `#F1EFF4` | secondary blocks, skeletons               |
+| Muted text         | `#66616C` | descriptions and metadata                 |
+| Border             | `#E4DFE8` | cards, fields, separators                 |
+| Primary            | `#E60076` | primary button, active control, progress  |
+| Primary hover      | `#C40063` | hover and high-contrast pink text         |
+| Primary foreground | `#FFFFFF` | text on primary; contrast target 4.5:1+   |
+| Accent             | `#7C3AED` | AI, secondary highlight, selected insight |
+| Accent foreground  | `#FFFFFF` | text on accent                            |
+| Success            | `#0F7A4F` | completed and healthy state               |
+| Warning            | `#9A5500` | caution and approaching limit             |
+| Destructive        | `#C62828` | destructive action and blocking error     |
 
 ### Dark theme
 
-| Token | Value | Use |
-|---|---|---|
-| Premium Black | `#09090B` | page canvas |
-| Foreground | `#F7F7FA` | primary text |
-| Card | `#111116` | normal content surface |
-| Popover | `#15151B` | elevated menu or dialog |
-| Muted surface | `#1B1A20` | secondary block |
-| Muted text | `#A8A3AF` | metadata and descriptions |
-| Border | `#2A2730` | structural outline |
-| Primary | `#FF3D9A` | primary action and active state |
-| Primary foreground | `#0B0B0F` | text on bright pink |
-| Accent | `#A855F7` | AI and secondary emphasis |
-| Accent foreground | `#0B0B0F` | text on accent |
-| Success | `#43D49A` | positive state |
-| Warning | `#F0A64A` | caution state |
-| Destructive | `#FF6B6B` | error and destructive action |
+| Token              | Value     | Use                             |
+| ------------------ | --------- | ------------------------------- |
+| Premium Black      | `#09090B` | page canvas                     |
+| Foreground         | `#F7F7FA` | primary text                    |
+| Card               | `#111116` | normal content surface          |
+| Popover            | `#15151B` | elevated menu or dialog         |
+| Muted surface      | `#1B1A20` | secondary block                 |
+| Muted text         | `#A8A3AF` | metadata and descriptions       |
+| Border             | `#2A2730` | structural outline              |
+| Primary            | `#FF3D9A` | primary action and active state |
+| Primary foreground | `#0B0B0F` | text on bright pink             |
+| Accent             | `#A855F7` | AI and secondary emphasis       |
+| Accent foreground  | `#0B0B0F` | text on accent                  |
+| Success            | `#43D49A` | positive state                  |
+| Warning            | `#F0A64A` | caution state                   |
+| Destructive        | `#FF6B6B` | error and destructive action    |
 
 ### Contrast rules
 
@@ -133,14 +133,14 @@ Glass is a spatial cue, not the default card style.
 
 **Normal content:** daily priorities, habits, goals, settings, analytics, and Admin data use opaque cards.
 
-| Property | Light | Dark |
-|---|---|---|
+| Property   | Light        | Dark             |
+| ---------- | ------------ | ---------------- |
 | Background | white at 72% | `#111116` at 76% |
-| Blur | 20 px | 20 px |
-| Saturation | 140% | 140% |
-| Border | white at 82% | white at 9% |
-| Radius | 16–24 px | 16–24 px |
-| Fallback | opaque white | opaque `#111116` |
+| Blur       | 20 px        | 20 px            |
+| Saturation | 140%         | 140%             |
+| Border     | white at 82% | white at 9%      |
+| Radius     | 16–24 px     | 16–24 px         |
+| Fallback   | opaque white | opaque `#111116` |
 
 Text contrast is evaluated against the worst plausible background behind the glass. Forced Colors and no-blur environments receive an opaque system-color fallback.
 
@@ -155,25 +155,26 @@ Use a Pink-to-Purple gradient only for hero atmosphere, AI identity, progress ce
 Primary UI stack:
 
 ```css
-font-family: "Inter Variable", "Noto Sans Bengali Variable",
-  "Noto Sans Bengali", system-ui, sans-serif;
+font-family:
+  "Inter Variable", "Noto Sans Bengali Variable", "Noto Sans Bengali",
+  system-ui, sans-serif;
 ```
 
 Inter renders Latin text and numerals; Noto Sans Bengali provides full Bangla shaping. Both are variable where available and may be self-hosted to improve reliability and privacy. Do not use condensed Bangla in interactive UI. Do not apply synthetic bold.
 
 ## 3.2 Type Scale
 
-| Role | Desktop | Mobile | Weight | Bangla line height |
-|---|---:|---:|---:|---:|
-| Display | 56 px | 40 px | 700 | 1.16 |
-| Page H1 | 40 px | 32 px | 700 | 1.24 |
-| Section H2 | 32 px | 26 px | 650 | 1.30 |
-| Card H3 | 24 px | 22 px | 650 | 1.38 |
-| Title | 20 px | 18 px | 600 | 1.45 |
-| Body | 16 px | 16 px | 400 | 1.62 |
-| Label | 14 px | 14 px | 550 | 1.48 |
-| Caption | 12 px | 12 px | 500 | 1.55 |
-| Timer numeral | 64–96 px | 56–72 px | 650 | 1.0 |
+| Role          |  Desktop |   Mobile | Weight | Bangla line height |
+| ------------- | -------: | -------: | -----: | -----------------: |
+| Display       |    56 px |    40 px |    700 |               1.16 |
+| Page H1       |    40 px |    32 px |    700 |               1.24 |
+| Section H2    |    32 px |    26 px |    650 |               1.30 |
+| Card H3       |    24 px |    22 px |    650 |               1.38 |
+| Title         |    20 px |    18 px |    600 |               1.45 |
+| Body          |    16 px |    16 px |    400 |               1.62 |
+| Label         |    14 px |    14 px |    550 |               1.48 |
+| Caption       |    12 px |    12 px |    500 |               1.55 |
+| Timer numeral | 64–96 px | 56–72 px |    650 |                1.0 |
 
 Bangla uses zero letter spacing. Never apply `uppercase` transformations to Bangla. Avoid underlining long Bangla phrases; use color, weight, or a border with adequate clearance from vowel marks.
 
@@ -199,14 +200,14 @@ Default locale is `bn-BD`; default time zone is the member’s saved IANA zone, 
 
 ## 3.5 Copy Examples
 
-| Intent | Preferred Bangla | Avoid |
-|---|---|---|
-| Empty daily plan | আজকের প্রধান কাজ এখনো ঠিক করা হয়নি | কোনো ডেটা পাওয়া যায়নি |
-| Save success | পরিবর্তন সংরক্ষিত হয়েছে | সফলভাবে সেভ করা হয়েছে |
-| Recoverable error | কিছু একটা ঠিকমতো কাজ করেনি। একটু পর আবার চেষ্টা করুন। | Error 500 |
-| AI proposal | কোনো পরিবর্তন আপনার অনুমতি ছাড়া কার্যকর হবে না। | AI এটি করে দেবে |
-| Offline | আপনি এখন Offline আছেন। সংযোগ ফিরলে পরিবর্তনগুলো Sync হবে। | Network unavailable |
-| Destructive | এই তথ্য মুছে ফেললে আর ফেরানো যাবে না। | আপনি কি নিশ্চিত? |
+| Intent            | Preferred Bangla                                          | Avoid                 |
+| ----------------- | --------------------------------------------------------- | --------------------- |
+| Empty daily plan  | আজকের প্রধান কাজ এখনো ঠিক করা হয়নি                        | কোনো ডেটা পাওয়া যায়নি |
+| Save success      | পরিবর্তন সংরক্ষিত হয়েছে                                   | সফলভাবে সেভ করা হয়েছে |
+| Recoverable error | কিছু একটা ঠিকমতো কাজ করেনি। একটু পর আবার চেষ্টা করুন।     | Error 500             |
+| AI proposal       | কোনো পরিবর্তন আপনার অনুমতি ছাড়া কার্যকর হবে না।           | AI এটি করে দেবে       |
+| Offline           | আপনি এখন Offline আছেন। সংযোগ ফিরলে পরিবর্তনগুলো Sync হবে। | Network unavailable   |
+| Destructive       | এই তথ্য মুছে ফেললে আর ফেরানো যাবে না।                     | আপনি কি নিশ্চিত?      |
 
 # 4. Layout and Responsive System
 
@@ -214,13 +215,13 @@ Default locale is `bn-BD`; default time zone is the member’s saved IANA zone, 
 
 ## 4.1 Breakpoints and Grid
 
-| Range | Grid | Gutter | Navigation | Context panel |
-|---|---|---:|---|---|
-| 0–639 px | 4 columns | 16 px | bottom navigation | full-screen or bottom Sheet |
-| 640–767 px | 4 columns | 20 px | bottom navigation | bottom Sheet |
-| 768–1023 px | 8 columns | 24 px | 72 px icon rail | right Sheet |
-| 1024–1279 px | 12 columns | 24 px | 224–240 px sidebar | overlay or 288 px panel |
-| 1280 px+ | 12 columns | 32 px | 240 px sidebar | optional 320 px panel |
+| Range        | Grid       | Gutter | Navigation         | Context panel               |
+| ------------ | ---------- | -----: | ------------------ | --------------------------- |
+| 0–639 px     | 4 columns  |  16 px | bottom navigation  | full-screen or bottom Sheet |
+| 640–767 px   | 4 columns  |  20 px | bottom navigation  | bottom Sheet                |
+| 768–1023 px  | 8 columns  |  24 px | 72 px icon rail    | right Sheet                 |
+| 1024–1279 px | 12 columns |  24 px | 224–240 px sidebar | overlay or 288 px panel     |
+| 1280 px+     | 12 columns |  32 px | 240 px sidebar     | optional 320 px panel       |
 
 Maximum application content width is 1440 px. Reading content is limited to 760 px and long forms to 640 px. The shell may span wider, but text lines and forms do not.
 
@@ -251,13 +252,13 @@ Page headers contain breadcrumb where useful, one H1, optional short description
 
 ## 5.1 Radius
 
-| Token | Value | Use |
-|---|---:|---|
-| Control | 12 px | buttons, inputs, selects |
-| Card | 16 px | normal cards and list containers |
-| Panel | 20 px | Sheet, dialog, AI panel |
-| Hero | 24 px | landing preview and major summary |
-| Pill | 999 px | badges, segmented controls, status chips |
+| Token   |  Value | Use                                      |
+| ------- | -----: | ---------------------------------------- |
+| Control |  12 px | buttons, inputs, selects                 |
+| Card    |  16 px | normal cards and list containers         |
+| Panel   |  20 px | Sheet, dialog, AI panel                  |
+| Hero    |  24 px | landing preview and major summary        |
+| Pill    | 999 px | badges, segmented controls, status chips |
 
 ## 5.2 Elevation
 
@@ -273,13 +274,13 @@ Avoid culture-specific metaphors where a plain label is clearer. The prayer and 
 
 ## 6.1 Motion Tokens
 
-| Token | Duration | Use |
-|---|---:|---|
-| Instant | 80 ms | press feedback |
-| Fast | 120 ms | hover, focus, icon state |
-| Standard | 180 ms | menus, tabs, small panels |
-| Deliberate | 240 ms | dialog and Sheet transitions |
-| Enter | 320 ms | page-local reveal, success summary |
+| Token      | Duration | Use                                |
+| ---------- | -------: | ---------------------------------- |
+| Instant    |    80 ms | press feedback                     |
+| Fast       |   120 ms | hover, focus, icon state           |
+| Standard   |   180 ms | menus, tabs, small panels          |
+| Deliberate |   240 ms | dialog and Sheet transitions       |
+| Enter      |   320 ms | page-local reveal, success summary |
 
 Use `cubic-bezier(0.2, 0, 0, 1)` for normal transitions and `cubic-bezier(0.2, 0.8, 0.2, 1)` for emphasized entrances. Exit motion is shorter than entrance motion.
 
@@ -318,14 +319,14 @@ Every relevant component defines:
 
 ## 7.2 Buttons
 
-| Variant | Use | Rules |
-|---|---|---|
-| Primary | the page’s single dominant action | Neon Pink fill; one per visible decision area |
-| Secondary | important alternative | neutral or soft Purple surface |
-| Outline | reversible utility action | visible border; no glass |
-| Ghost | low-emphasis navigation or toolbar | hover surface required |
-| Destructive | confirmed destructive action | red only; never brand Pink |
-| Link | inline navigation | descriptive text and clear hover/focus treatment |
+| Variant     | Use                                | Rules                                            |
+| ----------- | ---------------------------------- | ------------------------------------------------ |
+| Primary     | the page’s single dominant action  | Neon Pink fill; one per visible decision area    |
+| Secondary   | important alternative              | neutral or soft Purple surface                   |
+| Outline     | reversible utility action          | visible border; no glass                         |
+| Ghost       | low-emphasis navigation or toolbar | hover surface required                           |
+| Destructive | confirmed destructive action       | red only; never brand Pink                       |
+| Link        | inline navigation                  | descriptive text and clear hover/focus treatment |
 
 Heights are 44 px default, 36 px compact for dense desktop toolbars only, and 52 px for landing/onboarding emphasis. Mobile actions remain at least 44 px high. Loading buttons keep their width, retain the action label where possible, and prevent duplicate submission.
 
@@ -337,12 +338,12 @@ Bangla field labels may wrap to two lines. Controls align to the first label bas
 
 ## 7.4 Navigation
 
-| Component | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Primary navigation | labeled sidebar | icon rail with Tooltip | five-item bottom bar |
-| Page navigation | Tabs or local sidebar | Tabs / Select | horizontally scrollable Tabs or Select |
-| Breadcrumb | visible on deep routes | shortened | omitted when Back + title is clearer |
-| Command palette | centered dialog | centered dialog | full-screen dialog |
+| Component          | Desktop                | Tablet                 | Mobile                                 |
+| ------------------ | ---------------------- | ---------------------- | -------------------------------------- |
+| Primary navigation | labeled sidebar        | icon rail with Tooltip | five-item bottom bar                   |
+| Page navigation    | Tabs or local sidebar  | Tabs / Select          | horizontally scrollable Tabs or Select |
+| Breadcrumb         | visible on deep routes | shortened              | omitted when Back + title is clearer   |
+| Command palette    | centered dialog        | centered dialog        | full-screen dialog                     |
 
 Active state combines shape, weight, and color. Pink is never the only active signal. Navigation preserves focus after route transitions and announces the new page title.
 
@@ -899,14 +900,14 @@ apps/web/src/
 
 ## 21.1 Source of Truth
 
-| Artifact | Authority |
-|---|---|
-| `design-system/tokens.css` | semantic light/dark theme contract |
-| `design-system/tokens.ts` | spacing, typography, radius, motion, breakpoints |
-| `design-system/i18n/bn-BD.ts` | reviewed Bangla reference copy and glossary lock |
-| `design-system/i18n/en.ts` | secondary English key parity |
-| Storybook | rendered component behavior and states |
-| This specification | UX rules, page blueprints, acceptance criteria, governance |
+| Artifact                      | Authority                                                  |
+| ----------------------------- | ---------------------------------------------------------- |
+| `design-system/tokens.css`    | semantic light/dark theme contract                         |
+| `design-system/tokens.ts`     | spacing, typography, radius, motion, breakpoints           |
+| `design-system/i18n/bn-BD.ts` | reviewed Bangla reference copy and glossary lock           |
+| `design-system/i18n/en.ts`    | secondary English key parity                               |
+| Storybook                     | rendered component behavior and states                     |
+| This specification            | UX rules, page blueprints, acceptance criteria, governance |
 
 ## 21.2 Change Process
 
@@ -962,33 +963,33 @@ This baseline uses the following primary references as of 31 July 2026:
 
 # Appendix A. Representative Bangla Interface Copy
 
-| Context | Bangla |
-|---|---|
-| Landing H1 | মনোযোগ ধরে রাখুন। প্রতিদিন একটু করে এগিয়ে যান। |
-| Dashboard support | আজকের দিনটা পরিষ্কারভাবে শুরু করা যাক। |
-| Primary focus action | Focus Session শুরু করুন |
-| Empty priorities | আজকের প্রধান কাজ এখনো ঠিক করা হয়নি |
-| Daily guidance | কম কাজ বেছে নিন, কিন্তু গুরুত্বপূর্ণ কাজ শেষ করুন। |
-| Weekly guidance | সময় নয়, আগে ঠিক করুন কোন ফলটি সবচেয়ে গুরুত্বপূর্ণ। |
-| Analytics guidance | শুধু সংখ্যা নয়—কোন অভ্যাস আপনার মনোযোগ বাড়াচ্ছে, সেটি বুঝুন। |
-| AI boundary | কোনো পরিবর্তন আপনার অনুমতি ছাড়া কার্যকর হবে না। |
-| Offline | আপনি এখন Offline আছেন। সংযোগ ফিরলে পরিবর্তনগুলো Sync হবে। |
-| Conflict | অন্য একটি ডিভাইস থেকে তথ্যটি বদলেছে। নতুন তথ্য দেখে আবার চেষ্টা করুন। |
-| Destructive warning | এই তথ্য মুছে ফেললে আর ফেরানো যাবে না। |
-| AI unavailable | AI সেবা এখন পাওয়া যাচ্ছে না। আপনার কাজগুলো নিরাপদ আছে। |
+| Context              | Bangla                                                                |
+| -------------------- | --------------------------------------------------------------------- |
+| Landing H1           | মনোযোগ ধরে রাখুন। প্রতিদিন একটু করে এগিয়ে যান।                        |
+| Dashboard support    | আজকের দিনটা পরিষ্কারভাবে শুরু করা যাক।                                |
+| Primary focus action | Focus Session শুরু করুন                                               |
+| Empty priorities     | আজকের প্রধান কাজ এখনো ঠিক করা হয়নি                                    |
+| Daily guidance       | কম কাজ বেছে নিন, কিন্তু গুরুত্বপূর্ণ কাজ শেষ করুন।                    |
+| Weekly guidance      | সময় নয়, আগে ঠিক করুন কোন ফলটি সবচেয়ে গুরুত্বপূর্ণ।                    |
+| Analytics guidance   | শুধু সংখ্যা নয়—কোন অভ্যাস আপনার মনোযোগ বাড়াচ্ছে, সেটি বুঝুন।          |
+| AI boundary          | কোনো পরিবর্তন আপনার অনুমতি ছাড়া কার্যকর হবে না।                       |
+| Offline              | আপনি এখন Offline আছেন। সংযোগ ফিরলে পরিবর্তনগুলো Sync হবে।             |
+| Conflict             | অন্য একটি ডিভাইস থেকে তথ্যটি বদলেছে। নতুন তথ্য দেখে আবার চেষ্টা করুন। |
+| Destructive warning  | এই তথ্য মুছে ফেললে আর ফেরানো যাবে না।                                 |
+| AI unavailable       | AI সেবা এখন পাওয়া যাচ্ছে না। আপনার কাজগুলো নিরাপদ আছে।                |
 
 # Appendix B. Responsive Review Matrix
 
-| Page | Mobile priority | Tablet adaptation | Desktop enhancement |
-|---|---|---|---|
-| Landing | hero, CTA, stacked preview | split hero | product stage and proof layout |
-| Dashboard | primary action and today list | two-column summaries | 8/4 focus + AI layout |
-| Daily | sequential planning and Timer | content + Sheet | main column + sticky context rail |
-| Weekly | stepper | adaptive two-column | planning canvas + evidence rail |
-| Analytics | summary, chart, table toggle | two summary columns | full comparison and detail table |
-| Profile | identity then visibility | grouped cards | identity, progress, visibility columns |
-| Settings | list-to-detail | rail + panel | local sidebar + form panel |
-| Admin | priority columns and disclosure | filter rail | dense accessible data table |
+| Page      | Mobile priority                 | Tablet adaptation    | Desktop enhancement                    |
+| --------- | ------------------------------- | -------------------- | -------------------------------------- |
+| Landing   | hero, CTA, stacked preview      | split hero           | product stage and proof layout         |
+| Dashboard | primary action and today list   | two-column summaries | 8/4 focus + AI layout                  |
+| Daily     | sequential planning and Timer   | content + Sheet      | main column + sticky context rail      |
+| Weekly    | stepper                         | adaptive two-column  | planning canvas + evidence rail        |
+| Analytics | summary, chart, table toggle    | two summary columns  | full comparison and detail table       |
+| Profile   | identity then visibility        | grouped cards        | identity, progress, visibility columns |
+| Settings  | list-to-detail                  | rail + panel         | local sidebar + form panel             |
+| Admin     | priority columns and disclosure | filter rail          | dense accessible data table            |
 
 # Appendix C. Architecture Review Checklist
 

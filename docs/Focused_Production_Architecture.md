@@ -8,15 +8,15 @@ lang: en-US
 
 # Document Control
 
-| Field | Value |
-|---|---|
-| Document | Focused Production Architecture Specification |
-| Version | 1.1 |
-| Status | Architecture baseline for implementation |
-| Date | 31 July 2026 |
+| Field            | Value                                           |
+| ---------------- | ----------------------------------------------- |
+| Document         | Focused Production Architecture Specification   |
+| Version          | 1.1                                             |
+| Status           | Architecture baseline for implementation        |
+| Date             | 31 July 2026                                    |
 | Related baseline | Focused Software Requirements Specification 1.0 |
-| Decision owner | Architecture Review Board / Product Engineering |
-| Review cadence | Every major release or material platform change |
+| Decision owner   | Architecture Review Board / Product Engineering |
+| Review cadence   | Every major release or material platform change |
 
 # 1. Executive Architecture Decision
 
@@ -46,15 +46,15 @@ The architecture deliberately avoids both extremes: it does not begin with dozen
 
 ## 2.2 Quality Attribute Priorities
 
-| Priority | Attribute | Architectural response |
-|---|---|---|
-| 1 | Security and privacy | Short-lived access tokens, refresh rotation, deny-by-default RBAC plus ownership checks, encrypted transport/storage, context grants, audit events, secret isolation, content minimization. |
-| 2 | Correctness and trust | PostgreSQL transactions, domain invariants, optimistic concurrency, idempotency records, outbox/inbox patterns, immutable ledgers, explicit time-zone rules. |
-| 3 | Availability and resilience | Stateless functions, durable queues, retries with backoff, dead-letter handling, graceful provider fallbacks, cached read models, regional colocation. |
-| 4 | Usability and accessibility | Server-rendered critical paths, progressive enhancement, WCAG 2.2 AA, predictable UI states, reduced motion, keyboard parity, semantic status messages. |
-| 5 | Performance | RSC, code splitting, bounded queries, cursor pagination, indexes, pooled database access, cache-aside only for proven hot reads, CDN delivery. |
-| 6 | Maintainability | Feature modules, dependency rule, generated contracts, architecture tests, ADRs, strict TypeScript, Sonar quality gates, migration discipline. |
-| 7 | Evolvability | Versioned REST, provider ports, event contracts, outbox, projection tables, extraction criteria, mobile-neutral authentication and DTOs. |
+| Priority | Attribute                   | Architectural response                                                                                                                                                                      |
+| -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Security and privacy        | Short-lived access tokens, refresh rotation, deny-by-default RBAC plus ownership checks, encrypted transport/storage, context grants, audit events, secret isolation, content minimization. |
+| 2        | Correctness and trust       | PostgreSQL transactions, domain invariants, optimistic concurrency, idempotency records, outbox/inbox patterns, immutable ledgers, explicit time-zone rules.                                |
+| 3        | Availability and resilience | Stateless functions, durable queues, retries with backoff, dead-letter handling, graceful provider fallbacks, cached read models, regional colocation.                                      |
+| 4        | Usability and accessibility | Server-rendered critical paths, progressive enhancement, WCAG 2.2 AA, predictable UI states, reduced motion, keyboard parity, semantic status messages.                                     |
+| 5        | Performance                 | RSC, code splitting, bounded queries, cursor pagination, indexes, pooled database access, cache-aside only for proven hot reads, CDN delivery.                                              |
+| 6        | Maintainability             | Feature modules, dependency rule, generated contracts, architecture tests, ADRs, strict TypeScript, Sonar quality gates, migration discipline.                                              |
+| 7        | Evolvability                | Versioned REST, provider ports, event contracts, outbox, projection tables, extraction criteria, mobile-neutral authentication and DTOs.                                                    |
 
 ## 2.3 Non-goals
 
@@ -70,16 +70,16 @@ The architecture deliberately avoids both extremes: it does not begin with dozen
 
 ## 3.1 Decision Matrix
 
-| Criterion | Next.js Route Handlers | FastAPI | Decision impact |
-|---|---|---|---|
-| Fit with Prisma | Native TypeScript/Node integration and shared generated types | Prisma Client Python is not the selected ORM; a separate Node data service or different ORM would be required | Strongly favors Next.js |
-| Vercel operations | One project, preview deployment, environment, routing, observability, and rollback surface | Supported as Python functions, but introduces a second runtime and packaging path | Favors Next.js |
-| REST and OpenAPI | Route handlers need deliberate schema generation and architecture discipline | Excellent native OpenAPI and validation experience | Favors FastAPI in isolation |
-| AI ecosystem | Excellent for calling hosted model APIs and streaming SSE | Stronger for Python ML libraries, local inference, notebooks, and data science | Conditional |
-| Shared contracts | Zod schemas and generated API clients can be shared across TypeScript packages | Requires cross-language OpenAPI generation and duplicate domain representations | Favors Next.js now |
-| Background work | Neither request runtime should be treated as a durable queue; both need external orchestration on Vercel | Same | Neutral |
-| Team cognitive load | One language and deployment plane | Two languages, dependency graphs, pipelines, observability conventions, and security patch streams | Favors Next.js |
-| Independent AI scaling | Requires extracting a service when needed | Natural fit for an independently deployed Python service | Favors FastAPI later |
+| Criterion              | Next.js Route Handlers                                                                                   | FastAPI                                                                                                       | Decision impact             |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Fit with Prisma        | Native TypeScript/Node integration and shared generated types                                            | Prisma Client Python is not the selected ORM; a separate Node data service or different ORM would be required | Strongly favors Next.js     |
+| Vercel operations      | One project, preview deployment, environment, routing, observability, and rollback surface               | Supported as Python functions, but introduces a second runtime and packaging path                             | Favors Next.js              |
+| REST and OpenAPI       | Route handlers need deliberate schema generation and architecture discipline                             | Excellent native OpenAPI and validation experience                                                            | Favors FastAPI in isolation |
+| AI ecosystem           | Excellent for calling hosted model APIs and streaming SSE                                                | Stronger for Python ML libraries, local inference, notebooks, and data science                                | Conditional                 |
+| Shared contracts       | Zod schemas and generated API clients can be shared across TypeScript packages                           | Requires cross-language OpenAPI generation and duplicate domain representations                               | Favors Next.js now          |
+| Background work        | Neither request runtime should be treated as a durable queue; both need external orchestration on Vercel | Same                                                                                                          | Neutral                     |
+| Team cognitive load    | One language and deployment plane                                                                        | Two languages, dependency graphs, pipelines, observability conventions, and security patch streams            | Favors Next.js              |
+| Independent AI scaling | Requires extracting a service when needed                                                                | Natural fit for an independently deployed Python service                                                      | Favors FastAPI later        |
 
 ## 3.2 Recommendation
 
@@ -115,17 +115,17 @@ Extraction is considered when a module has a materially different scale profile,
 
 ## 4.3 Domain Boundaries
 
-| Module | Owns source-of-truth state | Publishes representative events |
-|---|---|---|
-| Identity and Preferences | users, provider identities, sessions, refresh families, roles, consents, locale, accessibility, notification preferences | UserRegistered, SessionRevoked, ConsentChanged, TimeZoneChanged |
-| Planning | life vision, goals, milestones, plans, plan items, calendar connections/events, time blocks, schedule proposals | GoalChanged, PlanClosed, TimeBlockChanged |
-| Focus Execution | deep-work/Pomodoro sessions, pauses, interruptions, outcomes | FocusSessionStarted, FocusSessionCompleted, InterruptionLogged |
-| Tracking and Wellbeing | habits and typed tracker items/entries; learning, reading, coding, faith, workout, sleep, mood specialization | TrackerEntryRecorded, HabitPaused, EvidenceAdded |
-| Reflection and Knowledge | journal/revisions, reflections, notes, bookmarks, resources, collections, search documents | PrivateDocumentChanged, ResourceSaved |
-| AI Guidance | conversations, messages, runs, context grants, evidence manifests, evaluations, proposals, feedback | AIRunCompleted, AIProposalAccepted |
-| Analytics and Reports | metric definitions, projections, snapshots, report/export jobs | ProjectionUpdated, ExportReady |
-| Engagement and Gamification | reminders, occurrences, notifications, deliveries, XP ledger, achievements, levels, streaks, challenges | ReminderDue, DeliveryFinalized, XPAwarded |
-| Administration and Platform | feature flags, policy configuration, audit, idempotency, webhook inbox, outbox, job metadata | PrivilegedActionRecorded, FeatureFlagChanged |
+| Module                      | Owns source-of-truth state                                                                                               | Publishes representative events                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Identity and Preferences    | users, provider identities, sessions, refresh families, roles, consents, locale, accessibility, notification preferences | UserRegistered, SessionRevoked, ConsentChanged, TimeZoneChanged |
+| Planning                    | life vision, goals, milestones, plans, plan items, calendar connections/events, time blocks, schedule proposals          | GoalChanged, PlanClosed, TimeBlockChanged                       |
+| Focus Execution             | deep-work/Pomodoro sessions, pauses, interruptions, outcomes                                                             | FocusSessionStarted, FocusSessionCompleted, InterruptionLogged  |
+| Tracking and Wellbeing      | habits and typed tracker items/entries; learning, reading, coding, faith, workout, sleep, mood specialization            | TrackerEntryRecorded, HabitPaused, EvidenceAdded                |
+| Reflection and Knowledge    | journal/revisions, reflections, notes, bookmarks, resources, collections, search documents                               | PrivateDocumentChanged, ResourceSaved                           |
+| AI Guidance                 | conversations, messages, runs, context grants, evidence manifests, evaluations, proposals, feedback                      | AIRunCompleted, AIProposalAccepted                              |
+| Analytics and Reports       | metric definitions, projections, snapshots, report/export jobs                                                           | ProjectionUpdated, ExportReady                                  |
+| Engagement and Gamification | reminders, occurrences, notifications, deliveries, XP ledger, achievements, levels, streaks, challenges                  | ReminderDue, DeliveryFinalized, XPAwarded                       |
+| Administration and Platform | feature flags, policy configuration, audit, idempotency, webhook inbox, outbox, job metadata                             | PrivilegedActionRecorded, FeatureFlagChanged                    |
 
 ## 4.4 Transaction and Event Rules
 
@@ -271,15 +271,15 @@ focused/
 
 There is no single global state library. State is assigned by ownership:
 
-| State type | Recommended owner | Examples |
-|---|---|---|
-| Server state | TanStack Query for interactive client views; RSC/fetch for server-rendered reads | goals, plans, habits, notifications, analytics |
-| URL state | Next.js search params and typed parsers | date, tab, filters, sort, cursor-compatible view state |
-| Form state | React Hook Form plus Zod contract schemas | goal editor, onboarding, reminder settings |
-| Local component state | `useState` / `useReducer` | disclosure, selected row, modal step |
-| Cross-component ephemeral state | Zustand, narrowly scoped by feature | active timer UI, offline sync queue status, command palette |
-| Durable offline drafts | IndexedDB through a repository adapter | journal/note draft, daily-plan mutation envelope |
-| Authentication | Server session context plus in-memory access token on clients | actor, permissions, session expiry |
+| State type                      | Recommended owner                                                                | Examples                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Server state                    | TanStack Query for interactive client views; RSC/fetch for server-rendered reads | goals, plans, habits, notifications, analytics              |
+| URL state                       | Next.js search params and typed parsers                                          | date, tab, filters, sort, cursor-compatible view state      |
+| Form state                      | React Hook Form plus Zod contract schemas                                        | goal editor, onboarding, reminder settings                  |
+| Local component state           | `useState` / `useReducer`                                                        | disclosure, selected row, modal step                        |
+| Cross-component ephemeral state | Zustand, narrowly scoped by feature                                              | active timer UI, offline sync queue status, command palette |
+| Durable offline drafts          | IndexedDB through a repository adapter                                           | journal/note draft, daily-plan mutation envelope            |
+| Authentication                  | Server session context plus in-memory access token on clients                    | actor, permissions, session expiry                          |
 
 TanStack Query is the default for client-side server-state synchronization, cache invalidation, retries, and optimistic mutations. Zustand is **not** a database mirror and must not hold domain collections globally. Redux Toolkit is unnecessary initially; reconsider it only if offline event coordination becomes complex enough to justify explicit reducers, middleware, and replay tooling.
 
@@ -320,43 +320,43 @@ The public base path is `/api/v1`. It is the contract for web and future mobile 
 
 ## 8.2 Status and Error Semantics
 
-| Situation | Status | Contract |
-|---|---:|---|
-| Successful read/update | 200 | resource plus metadata/ETag |
-| Successful create | 201 | resource and `Location` |
-| Accepted durable job | 202 | job resource and status URL |
-| Successful no-body delete | 204 | no response body |
-| Validation/domain rule | 400 or 422 | stable code plus field/action errors |
-| Missing/invalid authentication | 401 | `WWW-Authenticate`; no account enumeration |
-| Authenticated but forbidden | 403 or privacy-preserving 404 | stable safe message |
-| Resource absent | 404 | no existence leakage |
-| Duplicate natural key/state | 409 | conflict code and safe resolution |
-| Stale aggregate version | 412 | current ETag and merge hints where safe |
-| Rate limited | 429 | `Retry-After`; limit category, no sensitive detail |
-| Dependency unavailable | 503 | retryability and correlation ID |
+| Situation                      |                        Status | Contract                                           |
+| ------------------------------ | ----------------------------: | -------------------------------------------------- |
+| Successful read/update         |                           200 | resource plus metadata/ETag                        |
+| Successful create              |                           201 | resource and `Location`                            |
+| Accepted durable job           |                           202 | job resource and status URL                        |
+| Successful no-body delete      |                           204 | no response body                                   |
+| Validation/domain rule         |                    400 or 422 | stable code plus field/action errors               |
+| Missing/invalid authentication |                           401 | `WWW-Authenticate`; no account enumeration         |
+| Authenticated but forbidden    | 403 or privacy-preserving 404 | stable safe message                                |
+| Resource absent                |                           404 | no existence leakage                               |
+| Duplicate natural key/state    |                           409 | conflict code and safe resolution                  |
+| Stale aggregate version        |                           412 | current ETag and merge hints where safe            |
+| Rate limited                   |                           429 | `Retry-After`; limit category, no sensitive detail |
+| Dependency unavailable         |                           503 | retryability and correlation ID                    |
 
 ## 8.3 Endpoint Catalog
 
 The following is the bounded architecture surface. Each collection supports only the methods documented in OpenAPI; the table is not permission by implication.
 
-| Domain | Resources |
-|---|---|
-| Identity | `/auth/*`, `/users/me/profile`, `/users/me/sessions`, `/users/me/consents`, `/users/me/settings`, `/users/me/integrations`, `/users/me/locale`, `/users/me/accessibility`, `/onboarding`, `/locales` |
-| Dashboard | `/dashboard`, `/dashboard/widgets` |
-| Daily focus and timers | `/daily-plans/{date}`, `/daily-plans/{date}/priorities`, `/daily-plans/{date}/completion`, `/focus-sessions`, `/focus-sessions/{id}/pauses`, `/focus-sessions/{id}/resumption`, `/focus-sessions/{id}/completion`, `/focus-sessions/{id}/interruptions`, `/pomodoro/presets`, `/pomodoro/cycles` |
-| Planning | `/schedule/proposals`, `/schedule/time-blocks`, `/goals`, `/goals/{id}/milestones`, `/goals/{id}/check-ins`, `/life-vision`, `/life-vision/revisions`, `/life-vision/areas`, `/weekly-plans/{week}`, `/monthly-plans/{month}`, `/yearly-plans/{year}` |
-| Calendar | `/calendars`, `/calendar/events`, `/calendar/connections`, `/calendar/free-busy`, `/calendar/sync` |
-| Habits and learning | `/habits`, `/habits/{id}/entries`, `/learning/paths`, `/learning/items`, `/learning/sessions`, `/learning/evidence`, `/programming/skills`, `/programming/projects`, `/programming/logs` |
-| Reading and coding | `/coding-practice/problems`, `/coding-practice/attempts`, `/coding-practice/imports`, `/reading/items`, `/reading/items/{id}/progress`, `/reading/sessions` |
-| Faith and wellbeing | `/quran/plans`, `/quran/progress`, `/quran/reviews`, `/prayer/preferences`, `/prayer/times`, `/prayer/logs`, `/workouts/plans`, `/workouts/sessions`, `/workouts/exercises`, `/sleep/entries`, `/sleep/imports`, `/sleep/trends`, `/moods`, `/mood-scales`, `/moods/trends` |
-| Reflection and knowledge | `/journal/entries`, `/journal/entries/{id}/revisions`, `/journal/prompts`, `/reflections`, `/notes`, `/notes/{id}/revisions`, `/bookmarks`, `/resources`, `/knowledge/items`, `/knowledge/collections`, `/knowledge/search`, `/search`, `/search/suggestions` |
-| News and recommendations | `/news`, `/news/sources`, `/news/preferences`, `/learning/recommendations`, `/learning/recommendations/{id}/feedback` |
-| AI guidance | `/ai/runs`, `/ai/coach/conversations`, `/ai/coach/messages`, `/ai/mentor/plans`, `/ai/mentor/sessions`, `/ai/reviews/daily/{date}`, `/ai/reviews/weekly/{week}`, `/ai/reviews/monthly/{month}`, `/ai/suggestions`, `/ai/proposals/{id}/decision`, `/ai/reminder-proposals` |
-| Analytics and reports | `/analytics/focus`, `/analytics/distractions`, `/distractions`, `/reports`, `/reports/{id}/generation`, `/reports/{id}/snapshots`, `/exports` |
-| Gamification | `/achievements`, `/achievements/awards`, `/gamification/xp`, `/gamification/xp/ledger`, `/gamification/levels`, `/users/me/level`, `/streaks`, `/gamification/preferences`, `/challenges`, `/challenges/{id}/enrollments` |
-| Engagement | `/notifications`, `/notification-preferences`, `/push-subscriptions`, `/reminders`, `/reminders/{id}/occurrences`, `/reminders/{id}/snooze` |
-| Administration | `/admin/users`, `/admin/roles`, `/admin/content`, `/admin/feature-flags`, `/admin/audit`, `/admin/health`, `/admin/translations`, `/admin/news-sources`, `/admin/resource-catalog`, `/admin/gamification-rules` |
-| Future agents | `/agents`, `/agents/{id}/runs`, `/agent-runs/{id}/approvals`, `/agent-tools` |
+| Domain                   | Resources                                                                                                                                                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Identity                 | `/auth/*`, `/users/me/profile`, `/users/me/sessions`, `/users/me/consents`, `/users/me/settings`, `/users/me/integrations`, `/users/me/locale`, `/users/me/accessibility`, `/onboarding`, `/locales`                                                                                             |
+| Dashboard                | `/dashboard`, `/dashboard/widgets`                                                                                                                                                                                                                                                               |
+| Daily focus and timers   | `/daily-plans/{date}`, `/daily-plans/{date}/priorities`, `/daily-plans/{date}/completion`, `/focus-sessions`, `/focus-sessions/{id}/pauses`, `/focus-sessions/{id}/resumption`, `/focus-sessions/{id}/completion`, `/focus-sessions/{id}/interruptions`, `/pomodoro/presets`, `/pomodoro/cycles` |
+| Planning                 | `/schedule/proposals`, `/schedule/time-blocks`, `/goals`, `/goals/{id}/milestones`, `/goals/{id}/check-ins`, `/life-vision`, `/life-vision/revisions`, `/life-vision/areas`, `/weekly-plans/{week}`, `/monthly-plans/{month}`, `/yearly-plans/{year}`                                            |
+| Calendar                 | `/calendars`, `/calendar/events`, `/calendar/connections`, `/calendar/free-busy`, `/calendar/sync`                                                                                                                                                                                               |
+| Habits and learning      | `/habits`, `/habits/{id}/entries`, `/learning/paths`, `/learning/items`, `/learning/sessions`, `/learning/evidence`, `/programming/skills`, `/programming/projects`, `/programming/logs`                                                                                                         |
+| Reading and coding       | `/coding-practice/problems`, `/coding-practice/attempts`, `/coding-practice/imports`, `/reading/items`, `/reading/items/{id}/progress`, `/reading/sessions`                                                                                                                                      |
+| Faith and wellbeing      | `/quran/plans`, `/quran/progress`, `/quran/reviews`, `/prayer/preferences`, `/prayer/times`, `/prayer/logs`, `/workouts/plans`, `/workouts/sessions`, `/workouts/exercises`, `/sleep/entries`, `/sleep/imports`, `/sleep/trends`, `/moods`, `/mood-scales`, `/moods/trends`                      |
+| Reflection and knowledge | `/journal/entries`, `/journal/entries/{id}/revisions`, `/journal/prompts`, `/reflections`, `/notes`, `/notes/{id}/revisions`, `/bookmarks`, `/resources`, `/knowledge/items`, `/knowledge/collections`, `/knowledge/search`, `/search`, `/search/suggestions`                                    |
+| News and recommendations | `/news`, `/news/sources`, `/news/preferences`, `/learning/recommendations`, `/learning/recommendations/{id}/feedback`                                                                                                                                                                            |
+| AI guidance              | `/ai/runs`, `/ai/coach/conversations`, `/ai/coach/messages`, `/ai/mentor/plans`, `/ai/mentor/sessions`, `/ai/reviews/daily/{date}`, `/ai/reviews/weekly/{week}`, `/ai/reviews/monthly/{month}`, `/ai/suggestions`, `/ai/proposals/{id}/decision`, `/ai/reminder-proposals`                       |
+| Analytics and reports    | `/analytics/focus`, `/analytics/distractions`, `/distractions`, `/reports`, `/reports/{id}/generation`, `/reports/{id}/snapshots`, `/exports`                                                                                                                                                    |
+| Gamification             | `/achievements`, `/achievements/awards`, `/gamification/xp`, `/gamification/xp/ledger`, `/gamification/levels`, `/users/me/level`, `/streaks`, `/gamification/preferences`, `/challenges`, `/challenges/{id}/enrollments`                                                                        |
+| Engagement               | `/notifications`, `/notification-preferences`, `/push-subscriptions`, `/reminders`, `/reminders/{id}/occurrences`, `/reminders/{id}/snooze`                                                                                                                                                      |
+| Administration           | `/admin/users`, `/admin/roles`, `/admin/content`, `/admin/feature-flags`, `/admin/audit`, `/admin/health`, `/admin/translations`, `/admin/news-sources`, `/admin/resource-catalog`, `/admin/gamification-rules`                                                                                  |
+| Future agents            | `/agents`, `/agents/{id}/runs`, `/agent-runs/{id}/approvals`, `/agent-tools`                                                                                                                                                                                                                     |
 
 ## 8.4 Read Models and Graph Shape
 
@@ -380,17 +380,17 @@ The complete implementation baseline is provided in `prisma/schema.prisma`. It u
 
 ## 9.2 Schema Conventions
 
-| Concern | Rule |
-|---|---|
-| Ownership | Every private row is reachable from one `userId`; repositories require actor scope. |
-| Optimistic concurrency | Mutable aggregate roots have integer `version`; updates include the expected version. |
-| Time | Instants are UTC; plans/reminders also store local date/time and IANA time zone when semantically required. |
-| Money/cost | AI and provider cost uses integer micros, never floating point. |
-| Metrics | Duration uses integer seconds/milliseconds; quantities use `Decimal` with declared units. |
-| Private text | Classified at the field/model level; excluded from logs, analytics events, and AI unless granted. |
-| Deletion | Deletion jobs traverse an explicit registry; tombstones synchronize clients without retaining private bodies. |
-| Search | PostgreSQL full-text/trigram indexes first; external search is introduced only at measured scale. |
-| Migrations | Expand/contract, backward-compatible releases, checksums, lock-time budget, tested rollback/roll-forward. |
+| Concern                | Rule                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Ownership              | Every private row is reachable from one `userId`; repositories require actor scope.                           |
+| Optimistic concurrency | Mutable aggregate roots have integer `version`; updates include the expected version.                         |
+| Time                   | Instants are UTC; plans/reminders also store local date/time and IANA time zone when semantically required.   |
+| Money/cost             | AI and provider cost uses integer micros, never floating point.                                               |
+| Metrics                | Duration uses integer seconds/milliseconds; quantities use `Decimal` with declared units.                     |
+| Private text           | Classified at the field/model level; excluded from logs, analytics events, and AI unless granted.             |
+| Deletion               | Deletion jobs traverse an explicit registry; tombstones synchronize clients without retaining private bodies. |
+| Search                 | PostgreSQL full-text/trigram indexes first; external search is introduced only at measured scale.             |
+| Migrations             | Expand/contract, backward-compatible releases, checksums, lock-time budget, tested rollback/roll-forward.     |
 
 ## 9.3 ER Overview
 
@@ -478,16 +478,16 @@ AI is an advisory subsystem, not a source-of-truth owner. It may summarize, expl
 
 ## 12.2 AI Gateway Components
 
-| Component | Responsibility |
-|---|---|
-| AI policy service | consent, allowed purpose, data category, model/provider policy, age/safety constraints, budget |
-| Context resolver | loads only explicitly granted records, versions, and date ranges; minimizes and labels provenance |
-| Prompt registry | versioned system instructions, output schemas, safety policy, locale/tone variants |
-| Provider router | model capability, latency, cost, privacy, region, fallback, circuit breaker |
-| Streaming adapter | normalized SSE events, cancellation, heartbeat, usage tracking |
-| Output validator | JSON/schema validation, citation/source checks, unsafe-action rejection, repair/fallback |
+| Component          | Responsibility                                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| AI policy service  | consent, allowed purpose, data category, model/provider policy, age/safety constraints, budget             |
+| Context resolver   | loads only explicitly granted records, versions, and date ranges; minimizes and labels provenance          |
+| Prompt registry    | versioned system instructions, output schemas, safety policy, locale/tone variants                         |
+| Provider router    | model capability, latency, cost, privacy, region, fallback, circuit breaker                                |
+| Streaming adapter  | normalized SSE events, cancellation, heartbeat, usage tracking                                             |
+| Output validator   | JSON/schema validation, citation/source checks, unsafe-action rejection, repair/fallback                   |
 | Evaluation service | offline golden sets and sampled online checks for grounding, usefulness, safety, bias, and refusal quality |
-| Proposal service | expiring diff, rationale, evidence, target version, approval, idempotent execution |
+| Proposal service   | expiring diff, rationale, evidence, target version, approval, idempotent execution                         |
 
 ## 12.3 Retrieval and Context
 
@@ -503,10 +503,10 @@ Short coach responses stream through SSE. The client receives typed events: `run
 
 The approved initial provider adapters are **Groq** and **Gemini**. Route handlers and application use cases never import either vendor SDK directly. They call a provider port that supports streaming generation, structured output, embeddings where available, safety signals, token accounting, cancellation, and normalized errors.
 
-| Provider | Initial responsibilities | Architectural rationale | Production constraints |
-|---|---|---|---|
-| Groq | low-latency coach chat, quick suggestions, classification/extraction, short summaries, and speech transcription when enabled | very fast text inference, server-side API, streaming, structured/tool-capable models, and clear rate-limit headers | free-plan limits are organization-scoped and return `429` when exhausted; exact model availability and quotas are configuration, not code |
-| Gemini | daily/weekly/monthly reviews, longer-context reasoning, multimodal understanding, approved embeddings, and complex structured responses | strong long-context and multimodal capabilities with a free developer tier for evaluation and small projects | unpaid usage is not approved for sensitive, confidential, or personal Focused content; production capacity and privacy requirements may require a paid tier |
+| Provider | Initial responsibilities                                                                                                                | Architectural rationale                                                                                            | Production constraints                                                                                                                                      |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Groq     | low-latency coach chat, quick suggestions, classification/extraction, short summaries, and speech transcription when enabled            | very fast text inference, server-side API, streaming, structured/tool-capable models, and clear rate-limit headers | free-plan limits are organization-scoped and return `429` when exhausted; exact model availability and quotas are configuration, not code                   |
+| Gemini   | daily/weekly/monthly reviews, longer-context reasoning, multimodal understanding, approved embeddings, and complex structured responses | strong long-context and multimodal capabilities with a free developer tier for evaluation and small projects       | unpaid usage is not approved for sensitive, confidential, or personal Focused content; production capacity and privacy requirements may require a paid tier |
 
 Routing uses stable internal capability aliases rather than vendor model IDs:
 
@@ -535,16 +535,16 @@ Free tiers are a development and controlled-MVP optimization, not a scalability 
 
 Redis is necessary, but limited to data that can be reconstructed or safely expired.
 
-| Use | Key strategy | Typical TTL / rule |
-|---|---|---|
-| Distributed rate limits | `rl:{env}:{subject}:{routeClass}:{window}` | window duration plus jitter |
-| Session revocation acceleration | `revoked:sid:{sessionId}` | access-token maximum lifetime |
-| Idempotency fast path | `idem:{actor}:{route}:{key}` | same as database idempotency retention; DB remains authority |
-| Hot dashboard/projection cache | `view:{userId}:{projection}:{version}` | 30-120 seconds; invalidate by version/event |
-| Public feed/reference cache | source/version key | minutes to hours with stale-while-revalidate |
-| Short distributed lease | `lease:{jobType}:{shard}` | seconds; token-checked release |
-| AI budget counters | `ai-budget:{userId}:{period}` | billing/policy period |
-| Presence/ephemeral UI | scoped key | seconds; never correctness-critical |
+| Use                             | Key strategy                               | Typical TTL / rule                                           |
+| ------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| Distributed rate limits         | `rl:{env}:{subject}:{routeClass}:{window}` | window duration plus jitter                                  |
+| Session revocation acceleration | `revoked:sid:{sessionId}`                  | access-token maximum lifetime                                |
+| Idempotency fast path           | `idem:{actor}:{route}:{key}`               | same as database idempotency retention; DB remains authority |
+| Hot dashboard/projection cache  | `view:{userId}:{projection}:{version}`     | 30-120 seconds; invalidate by version/event                  |
+| Public feed/reference cache     | source/version key                         | minutes to hours with stale-while-revalidate                 |
+| Short distributed lease         | `lease:{jobType}:{shard}`                  | seconds; token-checked release                               |
+| AI budget counters              | `ai-budget:{userId}:{period}`              | billing/policy period                                        |
+| Presence/ephemeral UI           | scoped key                                 | seconds; never correctness-critical                          |
 
 Do not cache journals, notes, mood, health, faith, access tokens, refresh tokens, OAuth codes, provider secrets, or complete AI prompts. Avoid caching arbitrary Prisma query results. Cache explicit read models with a tenant prefix, schema version, bounded size, and measured hit rate. Redis failure must increase load or disable a nonessential optimization, not corrupt authoritative state.
 
@@ -601,16 +601,16 @@ Account export and deletion are durable jobs with category-level progress. Delet
 
 ## 16.3 Threat Model Highlights
 
-| Threat | Primary mitigations |
-|---|---|
-| IDOR / tenant leakage | repository actor scope, ownership policies, negative tests, opaque IDs, privacy-preserving 404 |
-| Refresh-token theft/replay | HttpOnly/secure storage, rotation, hash at rest, family replay detection, session revocation |
-| OAuth account takeover | PKCE, state, nonce, exact redirect URI, provider subject keys, explicit linking |
-| Prompt injection/tool abuse | scoped context grants, untrusted-content boundaries, tool allowlists, argument validation, approval gates |
-| Duplicate jobs/rewards/deliveries | idempotency tables, unique keys, inbox/outbox, append-only ledgers, compensations |
-| Notification privacy leak | minimal lock-screen body, category preferences, quiet hours, endpoint protection, deep-link authorization |
-| Admin misuse | least privilege, no routine private content, step-up, reason codes, immutable audit, separation of duties |
-| Supply-chain compromise | lockfiles, provenance, dependency review, secret scanning, minimal packages, protected CI and deployment |
+| Threat                            | Primary mitigations                                                                                       |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| IDOR / tenant leakage             | repository actor scope, ownership policies, negative tests, opaque IDs, privacy-preserving 404            |
+| Refresh-token theft/replay        | HttpOnly/secure storage, rotation, hash at rest, family replay detection, session revocation              |
+| OAuth account takeover            | PKCE, state, nonce, exact redirect URI, provider subject keys, explicit linking                           |
+| Prompt injection/tool abuse       | scoped context grants, untrusted-content boundaries, tool allowlists, argument validation, approval gates |
+| Duplicate jobs/rewards/deliveries | idempotency tables, unique keys, inbox/outbox, append-only ledgers, compensations                         |
+| Notification privacy leak         | minimal lock-screen body, category preferences, quiet hours, endpoint protection, deep-link authorization |
+| Admin misuse                      | least privilege, no routine private content, step-up, reason codes, immutable audit, separation of duties |
+| Supply-chain compromise           | lockfiles, provenance, dependency review, secret scanning, minimal packages, protected CI and deployment  |
 
 # 17. Scalability Decisions
 
@@ -646,16 +646,16 @@ The system scales in stages:
 
 ## 18.1 Service Objectives
 
-| Signal | Initial objective | Notes |
-|---|---:|---|
-| Core API availability | 99.9% monthly | excludes approved maintenance; measured at authenticated synthetic boundary |
-| Core API latency | p95 < 400 ms, p99 < 1 s | excludes AI/provider streaming and accepted jobs |
-| Error rate | < 0.5% server faults | separate user/domain errors from faults |
-| Reminder enqueue lag | p95 < 60 s | from due time to durable queue |
-| Push duplicate visible delivery | < 0.01% | unique occurrence/channel key |
-| Projection freshness | p95 < 2 min | dashboard/analytics; disclose staleness |
-| AI first token | p95 < 2.5 s | provider-dependent, with timeout/fallback |
-| Recovery | RPO <= 5 min; RTO <= 60 min target | validate against selected Neon plan and runbooks |
+| Signal                          |                  Initial objective | Notes                                                                       |
+| ------------------------------- | ---------------------------------: | --------------------------------------------------------------------------- |
+| Core API availability           |                      99.9% monthly | excludes approved maintenance; measured at authenticated synthetic boundary |
+| Core API latency                |            p95 < 400 ms, p99 < 1 s | excludes AI/provider streaming and accepted jobs                            |
+| Error rate                      |               < 0.5% server faults | separate user/domain errors from faults                                     |
+| Reminder enqueue lag            |                         p95 < 60 s | from due time to durable queue                                              |
+| Push duplicate visible delivery |                            < 0.01% | unique occurrence/channel key                                               |
+| Projection freshness            |                        p95 < 2 min | dashboard/analytics; disclose staleness                                     |
+| AI first token                  |                        p95 < 2.5 s | provider-dependent, with timeout/fallback                                   |
+| Recovery                        | RPO <= 5 min; RTO <= 60 min target | validate against selected Neon plan and runbooks                            |
 
 ## 18.2 Telemetry
 
@@ -694,17 +694,17 @@ Local, test, preview, staging where needed, and production use separate credenti
 
 # 20. Test Architecture
 
-| Layer | Tests |
-|---|---|
-| Domain | invariants, state machines, value objects, property-based time/recurrence tests |
-| Application | command/query behavior, policy decisions, idempotency, transaction boundaries, event publication |
-| Infrastructure | Prisma repository contract tests, migrations, Neon pooling, Redis/QStash/provider adapters |
-| API | OpenAPI conformance, authentication, authorization negatives, errors, ETag, pagination, idempotency |
-| UI | component behavior, loading/empty/error/offline states, keyboard, screen reader semantics, themes, responsive layouts |
-| E2E | registration/OAuth, daily plan, timer reconciliation, reminder/push subscription, AI proposal approval, export, admin audit |
-| Resilience | provider timeouts, duplicate queue delivery, stale versions, connection exhaustion, clock/DST changes, partial outage |
-| Security | OWASP ASVS-inspired checks, IDOR matrix, token replay, CSRF, XSS, webhook forgery, upload abuse, prompt injection |
-| Performance | API load, database query plans, queue fan-out, large histories, Web Vitals, bundle budgets |
+| Layer          | Tests                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Domain         | invariants, state machines, value objects, property-based time/recurrence tests                                             |
+| Application    | command/query behavior, policy decisions, idempotency, transaction boundaries, event publication                            |
+| Infrastructure | Prisma repository contract tests, migrations, Neon pooling, Redis/QStash/provider adapters                                  |
+| API            | OpenAPI conformance, authentication, authorization negatives, errors, ETag, pagination, idempotency                         |
+| UI             | component behavior, loading/empty/error/offline states, keyboard, screen reader semantics, themes, responsive layouts       |
+| E2E            | registration/OAuth, daily plan, timer reconciliation, reminder/push subscription, AI proposal approval, export, admin audit |
+| Resilience     | provider timeouts, duplicate queue delivery, stale versions, connection exhaustion, clock/DST changes, partial outage       |
+| Security       | OWASP ASVS-inspired checks, IDOR matrix, token replay, CSRF, XSS, webhook forgery, upload abuse, prompt injection           |
+| Performance    | API load, database query plans, queue fan-out, large histories, Web Vitals, bundle budgets                                  |
 
 Production-like synthetic tests use non-private fixtures. Contract tests guarantee that future mobile clients see the same authorization, validation, errors, and idempotency behavior as the web client.
 
@@ -712,16 +712,16 @@ Production-like synthetic tests use non-private fixtures. Contract tests guarant
 
 The following decisions are accepted in this baseline and must be captured as ADRs during implementation:
 
-| ADR | Decision | Revisit trigger |
-|---|---|---|
-| ADR-001 | Next.js Route Handlers are the primary REST backend | Python runtime becomes a bounded product/scale need |
-| ADR-002 | Modular monolith before microservices | independently scalable/reliable/team-owned boundary is measured |
-| ADR-003 | Neon PostgreSQL plus Prisma adapter | data residency, workload, or feature mismatch is demonstrated |
-| ADR-004 | QStash/Workflow for durable jobs | volume, semantics, or cost requires another broker/orchestrator |
-| ADR-005 | Redis is ephemeral optimization/coordination only | never revisited without a new durability model |
-| ADR-006 | JWT access plus rotating opaque refresh token | identity platform adoption or threat model changes |
-| ADR-007 | REST/OpenAPI is the mobile-neutral contract | multiple clients demonstrate material graph-shape inefficiency |
-| ADR-008 | AI produces proposals, not silent domain writes | formal agent safety baseline and explicit user policy exists |
+| ADR     | Decision                                            | Revisit trigger                                                 |
+| ------- | --------------------------------------------------- | --------------------------------------------------------------- |
+| ADR-001 | Next.js Route Handlers are the primary REST backend | Python runtime becomes a bounded product/scale need             |
+| ADR-002 | Modular monolith before microservices               | independently scalable/reliable/team-owned boundary is measured |
+| ADR-003 | Neon PostgreSQL plus Prisma adapter                 | data residency, workload, or feature mismatch is demonstrated   |
+| ADR-004 | QStash/Workflow for durable jobs                    | volume, semantics, or cost requires another broker/orchestrator |
+| ADR-005 | Redis is ephemeral optimization/coordination only   | never revisited without a new durability model                  |
+| ADR-006 | JWT access plus rotating opaque refresh token       | identity platform adoption or threat model changes              |
+| ADR-007 | REST/OpenAPI is the mobile-neutral contract         | multiple clients demonstrate material graph-shape inefficiency  |
+| ADR-008 | AI produces proposals, not silent domain writes     | formal agent safety baseline and explicit user policy exists    |
 
 Architecture fitness functions in CI enforce module imports, prohibit Prisma/provider imports in domain/application code, require OpenAPI operation IDs, detect unbounded collection endpoints, and validate that member-owned repository methods accept actor scope.
 
@@ -762,14 +762,14 @@ Platform limits and prices are operational inputs, not hard-coded business rules
 
 # Appendix A. Deliverable Map
 
-| Artifact | Purpose |
-|---|---|
-| `docs/Focused_Production_Architecture.md` | Editable architecture specification with Mermaid-rendered diagrams |
-| `docs/Focused_Production_Architecture.docx` | Reviewed stakeholder/engineering document |
-| `docs/architecture/diagrams/*.mmd` | Diagram source of truth |
-| `docs/architecture/diagrams/*.png` | Rendered diagrams embedded in DOCX |
-| `prisma/schema.prisma` | Production data-model baseline |
-| `api/openapi.yaml` | OpenAPI 3.1 contract baseline and shared conventions |
+| Artifact                                    | Purpose                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `docs/Focused_Production_Architecture.md`   | Editable architecture specification with Mermaid-rendered diagrams |
+| `docs/Focused_Production_Architecture.docx` | Reviewed stakeholder/engineering document                          |
+| `docs/architecture/diagrams/*.mmd`          | Diagram source of truth                                            |
+| `docs/architecture/diagrams/*.png`          | Rendered diagrams embedded in DOCX                                 |
+| `prisma/schema.prisma`                      | Production data-model baseline                                     |
+| `api/openapi.yaml`                          | OpenAPI 3.1 contract baseline and shared conventions               |
 
 # Appendix B. Architecture Review Checklist
 
