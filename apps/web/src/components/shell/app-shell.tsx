@@ -2,8 +2,8 @@ import {
   BarChart3,
   CalendarDays,
   CircleUserRound,
+  ListChecks,
   LayoutDashboard,
-  ListTodo,
 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { key: "dashboard", icon: LayoutDashboard, available: true },
-  { key: "today", icon: ListTodo, available: false },
+  { key: "habits", icon: ListChecks, available: true },
   { key: "week", icon: CalendarDays, available: false },
   { key: "analytics", icon: BarChart3, available: false },
   { key: "profile", icon: CircleUserRound, available: false },
@@ -150,7 +150,7 @@ const shellCopy = {
     navigationLabel: "অ্যাপ নেভিগেশন",
     mobileNavigationLabel: "মোবাইল নেভিগেশন",
     dashboard: "Dashboard",
-    today: "আজ",
+    habits: "অভ্যাস",
     week: "সপ্তাহ",
     analytics: "বিশ্লেষণ",
     profile: "প্রোফাইল",
@@ -161,7 +161,7 @@ const shellCopy = {
     navigationLabel: "Application navigation",
     mobileNavigationLabel: "Mobile navigation",
     dashboard: "Dashboard",
-    today: "Today",
+    habits: "Habits",
     week: "Week",
     analytics: "Analytics",
     profile: "Profile",
