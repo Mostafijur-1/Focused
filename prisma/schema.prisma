@@ -85,6 +85,20 @@ enum HabitKind {
   AVOIDANCE
 }
 
+enum HabitScheduleKind {
+  DAILY
+  WEEKDAYS
+  INTERVAL
+  CUSTOM_DATES
+}
+
+enum HabitOccurrenceStatus {
+  DUE
+  COMPLETED
+  SKIPPED
+  EXCUSED
+}
+
 enum TrackerKind {
   LEARNING_PATH
   LEARNING_ITEM
@@ -768,43 +782,139 @@ model Interruption {
 }
 
 model Habit {
-  id          String       @id @default(uuid()) @db.Uuid
-  userId      String       @db.Uuid
-  title       String       @db.VarChar(160)
-  kind        HabitKind
-  targetValue Decimal?     @db.Decimal(18, 4)
-  unit        String?      @db.VarChar(40)
-  schedule    Json
-  startsOn    DateTime     @db.Date
-  pausedAt    DateTime?    @db.Timestamptz(6)
-  archivedAt  DateTime?    @db.Timestamptz(6)
-  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
-  version     Int          @default(1)
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries     HabitEntry[]
+  id                       String                 @id @default(uuid()) @db.Uuid
+  userId                   String                 @db.Uuid
+  title                    String                 @db.VarChar(160)
+  kind                     HabitKind
+  targetValue              Decimal?               @db.Decimal(18, 4)
+  unit                     String?                @db.VarChar(40)
+  schedule                 Json
+  startsOn                 DateTime               @db.Date
+  createdByCommandId       String                 @db.Uuid
+  currentScheduleVersionId String?                @unique @db.Uuid
+  pausedAt                 DateTime?              @db.Timestamptz(6)
+  archivedAt               DateTime?              @db.Timestamptz(6)
+  createdAt                DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime               @updatedAt @db.Timestamptz(6)
+  version                  Int                    @default(1)
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentScheduleVersion   HabitScheduleVersion?  @relation("CurrentHabitSchedule", fields: [currentScheduleVersionId], references: [id], onDelete: SetNull)
+  scheduleVersions         HabitScheduleVersion[] @relation("HabitScheduleVersions")
+  occurrences              HabitOccurrence[]
+  pauses                   HabitPause[]
+  entries                  HabitEntry[]
 
+  @@unique([userId, createdByCommandId])
   @@index([userId, archivedAt])
   @@map("habits")
 }
 
-model HabitEntry {
-  id            String      @id @default(uuid()) @db.Uuid
-  habitId       String      @db.Uuid
-  localDate     DateTime    @db.Date
-  timeZone      String      @db.VarChar(80)
-  value         Decimal?    @db.Decimal(18, 4)
-  completed     Boolean?
-  skippedReason String?     @db.VarChar(160)
-  source        EntrySource @default(MANUAL)
-  recordedAt    DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
-  version       Int         @default(1)
-  habit         Habit       @relation(fields: [habitId], references: [id], onDelete: Cascade)
+model HabitScheduleVersion {
+  id            String            @id @default(uuid()) @db.Uuid
+  habitId       String            @db.Uuid
+  revision      Int
+  kind          HabitScheduleKind
+  rule          Json
+  targetValue   Decimal?          @db.Decimal(18, 4)
+  unit          String?           @db.VarChar(40)
+  timeZone      String            @db.VarChar(80)
+  effectiveFrom DateTime          @db.Date
+  effectiveTo   DateTime?         @db.Date
+  createdAt     DateTime          @default(now()) @db.Timestamptz(6)
+  habit         Habit             @relation("HabitScheduleVersions", fields: [habitId], references: [id], onDelete: Cascade)
+  activeFor     Habit?            @relation("CurrentHabitSchedule")
+  occurrences   HabitOccurrence[]
+
+  @@unique([habitId, revision])
+  @@index([habitId, effectiveFrom(sort: Desc)])
+  @@map("habit_schedule_versions")
+}
+
+model HabitPause {
+  id        String    @id @default(uuid()) @db.Uuid
+  habitId   String    @db.Uuid
+  startsOn  DateTime  @db.Date
+  endsOn    DateTime? @db.Date
+  reason    String?   @db.VarChar(160)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  resumedAt DateTime? @db.Timestamptz(6)
+  version   Int       @default(1)
+  habit     Habit     @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@index([habitId, startsOn(sort: Desc)])
+  @@map("habit_pauses")
+}
+
+model HabitOccurrence {
+  id                String                @id @default(uuid()) @db.Uuid
+  habitId           String                @db.Uuid
+  scheduleVersionId String                @db.Uuid
+  localDate         DateTime              @db.Date
+  timeZone          String                @db.VarChar(80)
+  targetValue       Decimal?              @db.Decimal(18, 4)
+  unit              String?               @db.VarChar(40)
+  status            HabitOccurrenceStatus @default(DUE)
+  createdAt         DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime              @updatedAt @db.Timestamptz(6)
+  version           Int                   @default(1)
+  habit             Habit                 @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  scheduleVersion   HabitScheduleVersion  @relation(fields: [scheduleVersionId], references: [id], onDelete: Restrict)
+  entry             HabitEntry?
 
   @@unique([habitId, localDate])
+  @@index([habitId, status, localDate(sort: Desc)])
+  @@index([localDate, status])
+  @@map("habit_occurrences")
+}
+
+model HabitEntry {
+  id              String               @id @default(uuid()) @db.Uuid
+  habitId         String               @db.Uuid
+  occurrenceId    String?              @unique @db.Uuid
+  clientCommandId String?              @db.Uuid
+  localDate       DateTime             @db.Date
+  timeZone        String               @db.VarChar(80)
+  value           Decimal?             @db.Decimal(18, 4)
+  completed       Boolean?
+  skippedReason   String?              @db.VarChar(160)
+  note            String?              @db.VarChar(500)
+  evidenceRef     String?              @db.Uuid
+  source          EntrySource          @default(MANUAL)
+  recordedAt      DateTime             @default(now()) @db.Timestamptz(6)
+  correctedAt     DateTime?            @db.Timestamptz(6)
+  undoneAt        DateTime?            @db.Timestamptz(6)
+  updatedAt       DateTime             @updatedAt @db.Timestamptz(6)
+  version         Int                  @default(1)
+  habit           Habit                @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  occurrence      HabitOccurrence?     @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+  revisions       HabitEntryRevision[]
+
+  @@unique([habitId, localDate])
+  @@unique([habitId, clientCommandId])
   @@index([habitId, recordedAt(sort: Desc)])
   @@map("habit_entries")
+}
+
+model HabitEntryRevision {
+  id              String      @id @default(uuid()) @db.Uuid
+  entryId         String      @db.Uuid
+  revision        Int
+  value           Decimal?    @db.Decimal(18, 4)
+  completed       Boolean?
+  skippedReason   String?     @db.VarChar(160)
+  note            String?     @db.VarChar(500)
+  evidenceRef     String?     @db.Uuid
+  source          EntrySource
+  clientCommandId String      @db.Uuid
+  recordedAt      DateTime    @db.Timestamptz(6)
+  supersededAt    DateTime?   @db.Timestamptz(6)
+  undone          Boolean     @default(false)
+  entry           HabitEntry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, revision])
+  @@unique([entryId, clientCommandId])
+  @@index([entryId, recordedAt(sort: Desc)])
+  @@map("habit_entry_revisions")
 }
 
 model TrackerItem {

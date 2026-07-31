@@ -74,6 +74,11 @@ const nativeObjectNames = new Set([
   "dashboard_widget_preferences_layout_size_check",
   "dashboard_projection_cursors_event_check",
   "dashboard_projection_cursors_version_check",
+  "habit_schedule_versions_range_check",
+  "habit_pauses_range_check",
+  "habit_pauses_one_active_idx",
+  "habit_occurrences_version_check",
+  "habit_entry_revisions_revision_check",
 ]);
 
 const unexpected = statements.filter((statement) => {

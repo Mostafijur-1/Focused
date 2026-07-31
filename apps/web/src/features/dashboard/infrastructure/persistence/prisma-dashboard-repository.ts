@@ -28,7 +28,11 @@ import type {
 import { AppError } from "@/lib/errors/app-error";
 
 export class PrismaDashboardRepository implements DashboardRepository {
-  constructor(private readonly prisma: FocusedPrismaClient) {}
+  constructor(
+    private readonly prisma: FocusedPrismaClient,
+    private readonly prepareHabitRead?:
+      ((userId: string, localDate: string) => Promise<void>) | undefined,
+  ) {}
 
   async getIdentity(userId: string): Promise<DashboardIdentity> {
     const user = await this.prisma.user.findFirst({
@@ -337,32 +341,33 @@ export class PrismaDashboardRepository implements DashboardRepository {
   }
 
   async readHabits(userId: string, localDate: string): Promise<HabitSummary> {
+    await this.prepareHabitRead?.(userId, localDate);
     const date = databaseDate(localDate);
-    const habits = await this.prisma.habit.findMany({
-      where: {
-        userId,
-        archivedAt: null,
-        pausedAt: null,
-        startsOn: { lte: date },
-      },
-      select: {
-        entries: {
-          where: { localDate: date },
-          take: 1,
-          select: { completed: true },
+    const [configured, occurrences] = await Promise.all([
+      this.prisma.habit.count({
+        where: { userId, archivedAt: null, startsOn: { lte: date } },
+      }),
+      this.prisma.habitOccurrence.findMany({
+        where: {
+          localDate: date,
+          habit: { userId, archivedAt: null },
         },
-      },
-      take: 50,
-    });
-    if (habits.length === 0) {
+        select: { status: true },
+        take: 100,
+      }),
+    ]);
+    if (configured === 0) {
       return { state: "not_configured", completedCount: 0, dueCount: 0 };
     }
+    const due = occurrences.filter(
+      (occurrence) => occurrence.status !== "EXCUSED",
+    );
     return {
       state: "ready",
-      completedCount: habits.filter(
-        (habit) => habit.entries[0]?.completed === true,
+      completedCount: due.filter(
+        (occurrence) => occurrence.status === "COMPLETED",
       ).length,
-      dueCount: habits.length,
+      dueCount: due.length,
     };
   }
 
