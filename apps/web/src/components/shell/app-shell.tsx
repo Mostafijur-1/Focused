@@ -1,5 +1,6 @@
 import {
   Bell,
+  ChartNoAxesCombined,
   CalendarDays,
   ListChecks,
   LayoutDashboard,
@@ -30,6 +31,7 @@ const navigation = [
   { key: "goals", icon: Target, available: true },
   { key: "week", icon: CalendarDays, available: true },
   { key: "notifications", icon: Bell, available: true },
+  { key: "analytics", icon: ChartNoAxesCombined, available: true },
   { key: "security", icon: ShieldCheck, available: true },
 ] as const;
 
@@ -157,6 +159,7 @@ const shellCopy = {
     goals: "লক্ষ্য",
     week: "সপ্তাহ",
     notifications: "Notification",
+    analytics: "Analytics",
     security: "নিরাপত্তা",
     more: "আরও",
     allFeatures: "সব feature",
@@ -174,6 +177,7 @@ const shellCopy = {
     goals: "Goals",
     week: "Week",
     notifications: "Notifications",
+    analytics: "Analytics",
     security: "Security",
     more: "More",
     allFeatures: "All features",

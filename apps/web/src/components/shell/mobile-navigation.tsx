@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  ChartNoAxesCombined,
   CalendarDays,
   Check,
   LayoutDashboard,
@@ -28,6 +29,7 @@ export type AppNavigationKey =
   | "goals"
   | "week"
   | "notifications"
+  | "analytics"
   | "security";
 
 export interface MobileNavigationItem {
@@ -55,6 +57,7 @@ const icons = {
   goals: Target,
   week: CalendarDays,
   notifications: Bell,
+  analytics: ChartNoAxesCombined,
   security: ShieldCheck,
 } as const satisfies Record<AppNavigationKey, typeof LayoutDashboard>;
 
