@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Bell,
   ChartNoAxesCombined,
@@ -6,6 +8,7 @@ import {
   LayoutDashboard,
   MessagesSquare,
   ShieldCheck,
+  ShieldEllipsis,
   Target,
   TimerReset,
 } from "lucide-react";
@@ -19,6 +22,7 @@ import {
   type AppNavigationKey,
 } from "@/components/shell/mobile-navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useAuth } from "@/features/auth/ui/auth-provider";
 import type { Locale } from "@/i18n/config";
 import { getSiteCopy } from "@/i18n/site-copy";
 import { cn } from "@/lib/utils";
@@ -33,6 +37,12 @@ const navigation = [
   { key: "notifications", icon: Bell, available: true },
   { key: "analytics", icon: ChartNoAxesCombined, available: true },
   { key: "security", icon: ShieldCheck, available: true },
+  {
+    key: "admin",
+    icon: ShieldEllipsis,
+    available: true,
+    permission: "admin:access",
+  },
 ] as const;
 
 interface AppShellProps {
@@ -44,6 +54,12 @@ interface AppShellProps {
 export function AppShell({ children, locale, active }: AppShellProps) {
   const copy = shellCopy[locale];
   const site = getSiteCopy(locale);
+  const auth = useAuth();
+  const visibleNavigation = navigation.filter(
+    (item) =>
+      !("permission" in item) ||
+      auth.session?.user.permissions.includes(item.permission),
+  );
 
   return (
     <div className="bg-background min-h-svh">
@@ -59,7 +75,7 @@ export function AppShell({ children, locale, active }: AppShellProps) {
           <BrandMark className="max-md:[&_span]:sr-only" />
         </Link>
         <nav className="mt-6 space-y-1" aria-label={copy.navigationLabel}>
-          {navigation.map((item) => (
+          {visibleNavigation.map((item) => (
             <NavigationItem
               key={item.key}
               active={item.key === active}
@@ -85,7 +101,7 @@ export function AppShell({ children, locale, active }: AppShellProps) {
 
       <MobileNavigation
         active={active}
-        items={navigation.map((item) => ({
+        items={visibleNavigation.map((item) => ({
           key: item.key,
           href: `/${locale}/${item.key}` as Route,
           label: copy[item.key],
@@ -161,6 +177,7 @@ const shellCopy = {
     notifications: "Notification",
     analytics: "Analytics",
     security: "নিরাপত্তা",
+    admin: "Admin",
     more: "আরও",
     allFeatures: "সব feature",
     closeMenu: "Menu বন্ধ করুন",
@@ -179,6 +196,7 @@ const shellCopy = {
     notifications: "Notifications",
     analytics: "Analytics",
     security: "Security",
+    admin: "Admin",
     more: "More",
     allFeatures: "All features",
     closeMenu: "Close menu",

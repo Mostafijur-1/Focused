@@ -10,6 +10,7 @@ import {
   Menu,
   MessagesSquare,
   ShieldCheck,
+  ShieldEllipsis,
   Target,
   TimerReset,
   X,
@@ -30,7 +31,8 @@ export type AppNavigationKey =
   | "week"
   | "notifications"
   | "analytics"
-  | "security";
+  | "security"
+  | "admin";
 
 export interface MobileNavigationItem {
   readonly key: AppNavigationKey;
@@ -59,6 +61,7 @@ const icons = {
   notifications: Bell,
   analytics: ChartNoAxesCombined,
   security: ShieldCheck,
+  admin: ShieldEllipsis,
 } as const satisfies Record<AppNavigationKey, typeof LayoutDashboard>;
 
 const primaryKeys = new Set<AppNavigationKey>([

@@ -434,7 +434,7 @@ export function AnalyticsWorkspace({ locale }: { readonly locale: Locale }) {
                     <strong className="text-foreground">
                       {item.key} v{item.version}:
                     </strong>{" "}
-                      {copy.definitionLabels[item.key] ?? item.definition}
+                    {copy.definitionLabels[item.key] ?? item.definition}
                   </li>
                 ))}
               </ul>
