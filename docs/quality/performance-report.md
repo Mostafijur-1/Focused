@@ -6,6 +6,8 @@
 - Repository tests inspect selected hot-query plans and domain reads are bounded by explicit limits.
 - Timer UI tests use server-authoritative timestamps and do not wait in real time.
 - Analytics reads are capped to 366 days and expensive rebuild/export/notification work uses asynchronous boundaries.
+- The Milestone 14 build analyzer enforces route, loading-boundary, stylesheet, and service-worker budgets; see [optimization-report.md](optimization-report.md).
+- Controlled bundle work reduced Dashboard loading JavaScript by 85.7% and Habit loading JavaScript by 97.5% gzip.
 
 ## Required measurements
 

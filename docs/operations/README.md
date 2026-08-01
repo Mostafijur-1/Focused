@@ -25,6 +25,7 @@ PostgreSQL remains authoritative. Redis, queues, projections and provider caches
 
 - [Protected deployment and rollback](deployment.md)
 - [Observability and SLO ownership](observability.md)
+- [Performance and capacity operations](performance-and-capacity.md)
 - [Incident response and communications](incident-response.md)
 - [Release checklist](release-checklist.md)
 - [Launch record](launch-record.md)

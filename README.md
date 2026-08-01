@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 through 11 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, authoritative Focus Timer, consent-driven AI Guidance, privacy-preserving Notifications, Analytics, and governed Admin foundations:
+Milestones 1 through 14 establish the product foundations, integrated quality controls, protected deployment workflow, and measured optimization gate:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -37,6 +37,8 @@ Milestones 1 through 11 establish the production, Authentication, PostgreSQL per
 - QStash-signed bounded workers with PostgreSQL `SKIP LOCKED` claims, idempotent materialization, per-device delivery attempts, retries, and reconciliation
 - Versioned Focus and Distraction Analytics projections with deterministic rebuilds, bounded 366-day reads, historical timezone handling, and explicit metric definitions
 - Accessible chart/table parity, privacy-filtered immutable reports, AES-GCM encrypted CSV/JSON exports with checksums and expiry, and optional positive-only XP/levels
+- Protected preview/production Vercel releases with immutable SHA validation, migration-before-deploy ordering, provenance attestation, rollback/smoke runbooks, and environment isolation
+- Route-level gzip budgets, lean server-rendered loading boundaries, public-only PWA offline fallback, structured SEO data, and documented capacity/scaling triggers
 
 Later FocusOS modules remain forward contracts until their approved milestones.
 
@@ -104,6 +106,8 @@ The complete Authentication variable catalog and key-generation instructions are
 | `pnpm test:coverage`     | Run enforced coverage thresholds                |
 | `pnpm test:e2e`          | Run Playwright browser/accessibility tests      |
 | `pnpm test:deployment`   | Test deployment validation and smoke controls   |
+| `pnpm test:optimization` | Test PWA and performance-budget controls        |
+| `pnpm analyze:build`     | Enforce route/PWA budgets after a build         |
 | `pnpm api:lint`          | Validate the OpenAPI 3.1 contract               |
 | `pnpm db:validate`       | Validate the Prisma data model                  |
 | `pnpm db:migrate:deploy` | Apply committed migrations safely               |
@@ -206,6 +210,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Admin operations, RBAC, MFA, audit, and bootstrap](docs/admin-operations.md)
 - [Milestone 12 quality and release evidence](docs/quality/README.md)
 - [Deployment, rollback, observability, and incident operations](docs/operations/README.md)
+- [Milestone 14 measured optimization evidence](docs/quality/optimization-report.md)
 
 ## Contribution workflow
 
