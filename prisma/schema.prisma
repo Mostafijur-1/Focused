@@ -258,6 +258,38 @@ enum JobStatus {
   EXPIRED
 }
 
+enum AdminCaseStatus {
+  OPEN
+  CLOSED
+  EXPIRED
+}
+
+enum AdminStepUpMethod {
+  PASSWORD_TOTP
+  OAUTH_TOTP
+}
+
+enum OperationalMfaStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+enum AuditOutcome {
+  ALLOWED
+  DENIED
+  FAILED
+}
+
+enum AdminApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  EXECUTED
+  CANCELLED
+}
+
 enum IdempotencyStatus {
   PROCESSING
   COMPLETED
@@ -293,57 +325,63 @@ model User {
   deletedAt         DateTime?  @db.Timestamptz(6)
   version           Int        @default(1)
 
-  profile                UserProfile?
-  oauthAccounts          OAuthAccount[]
-  oauthTransactions      OAuthTransaction[]
-  sessions               AuthSession[]
-  refreshTokens          RefreshToken[]
-  authTokens             AuthOneTimeToken[]
-  roles                  UserRole[]
-  consents               Consent[]
-  preferences            UserPreference[]
-  pushSubscriptions      PushSubscription[]
-  goals                  Goal[]
-  plans                  Plan[]
-  timeBlocks             TimeBlock[]
-  calendarConnections    CalendarConnection[]
-  calendarEvents         CalendarEvent[]
-  focusSessions          FocusSession[]
-  pomodoroPresets        PomodoroPreset[]
-  habits                 Habit[]
-  trackerItems           TrackerItem[]
-  journalEntries         JournalEntry[]
-  reflections            Reflection[]
-  notes                  Note[]
-  bookmarks              Bookmark[]
-  resources              Resource[]
-  lifeVisions            LifeVision[]
-  scheduleProposals      ScheduleProposal[]
-  aiConversations        AIConversation[]
-  aiRuns                 AIRun[]
-  aiContextGrants        AIContextGrant[]
-  aiProposals            AIProposal[]
-  reminders              Reminder[]
-  notificationPreference NotificationPreference?
-  notifications          Notification[]
-  xpEntries              XPLedgerEntry[]
-  achievementAwards      AchievementAward[]
-  userLevel              UserLevel?
-  streaks                Streak[]
-  challengeEnrollments   ChallengeEnrollment[]
-  metricEvents           MetricEvent[]
-  metricSnapshots        DailyMetricSnapshot[]
-  reportJobs             ReportJob[]
-  exportJobs             ExportJob[]
-  idempotencyRecords     IdempotencyRecord[]
-  backgroundJobs         BackgroundJob[]
-  dashboardSnapshots     DashboardSnapshot[]
-  dashboardWidgets       DashboardWidgetPreference[]
-  dashboardCursor        DashboardProjectionCursor?
-  analyticsCursor        AnalyticsProjectionCursor?
-  analyticsPreference    AnalyticsPreference?
-  auditEvents            AuditEvent[]                @relation("AuditActor")
-  outboxEvents           OutboxEvent[]
+  profile                 UserProfile?
+  oauthAccounts           OAuthAccount[]
+  oauthTransactions       OAuthTransaction[]
+  sessions                AuthSession[]
+  refreshTokens           RefreshToken[]
+  authTokens              AuthOneTimeToken[]
+  roles                   UserRole[]
+  consents                Consent[]
+  preferences             UserPreference[]
+  pushSubscriptions       PushSubscription[]
+  goals                   Goal[]
+  plans                   Plan[]
+  timeBlocks              TimeBlock[]
+  calendarConnections     CalendarConnection[]
+  calendarEvents          CalendarEvent[]
+  focusSessions           FocusSession[]
+  pomodoroPresets         PomodoroPreset[]
+  habits                  Habit[]
+  trackerItems            TrackerItem[]
+  journalEntries          JournalEntry[]
+  reflections             Reflection[]
+  notes                   Note[]
+  bookmarks               Bookmark[]
+  resources               Resource[]
+  lifeVisions             LifeVision[]
+  scheduleProposals       ScheduleProposal[]
+  aiConversations         AIConversation[]
+  aiRuns                  AIRun[]
+  aiContextGrants         AIContextGrant[]
+  aiProposals             AIProposal[]
+  reminders               Reminder[]
+  notificationPreference  NotificationPreference?
+  notifications           Notification[]
+  xpEntries               XPLedgerEntry[]
+  achievementAwards       AchievementAward[]
+  userLevel               UserLevel?
+  streaks                 Streak[]
+  challengeEnrollments    ChallengeEnrollment[]
+  metricEvents            MetricEvent[]
+  metricSnapshots         DailyMetricSnapshot[]
+  reportJobs              ReportJob[]
+  exportJobs              ExportJob[]
+  idempotencyRecords      IdempotencyRecord[]
+  backgroundJobs          BackgroundJob[]
+  dashboardSnapshots      DashboardSnapshot[]
+  dashboardWidgets        DashboardWidgetPreference[]
+  dashboardCursor         DashboardProjectionCursor?
+  analyticsCursor         AnalyticsProjectionCursor?
+  analyticsPreference     AnalyticsPreference?
+  adminCasesOpened        AdminCase[]                 @relation("AdminCaseOpenedBy")
+  adminApprovalsRequested AdminApprovalRequest[]      @relation("AdminApprovalRequestedBy")
+  adminApprovalsDecided   AdminApprovalRequest[]      @relation("AdminApprovalDecidedBy")
+  adminApprovalTargets    AdminApprovalRequest[]      @relation("AdminApprovalTarget")
+  operationalMfa          OperationalMfaCredential?
+  adminStepUpGrants       AdminStepUpGrant[]
+  auditEvents             AuditEvent[]                @relation("AuditActor")
+  outboxEvents            OutboxEvent[]
 
   @@index([status, createdAt])
   @@map("users")
@@ -407,22 +445,23 @@ model OAuthTransaction {
 }
 
 model AuthSession {
-  id              String         @id @default(uuid()) @db.Uuid
-  userId          String         @db.Uuid
-  status          SessionStatus  @default(ACTIVE)
-  deviceName      String?        @db.VarChar(120)
-  userAgentHash   String?        @db.VarChar(128)
-  ipPrefix        String?        @db.VarChar(64)
-  authMethod      String         @db.VarChar(40)
-  authenticatedAt DateTime       @default(now()) @db.Timestamptz(6)
-  mfaVerifiedAt   DateTime?      @db.Timestamptz(6)
-  lastSeenAt      DateTime       @default(now()) @db.Timestamptz(6)
-  expiresAt       DateTime       @db.Timestamptz(6)
-  revokedAt       DateTime?      @db.Timestamptz(6)
-  revokeReason    String?        @db.VarChar(80)
-  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshTokens   RefreshToken[]
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @db.Uuid
+  status            SessionStatus      @default(ACTIVE)
+  deviceName        String?            @db.VarChar(120)
+  userAgentHash     String?            @db.VarChar(128)
+  ipPrefix          String?            @db.VarChar(64)
+  authMethod        String             @db.VarChar(40)
+  authenticatedAt   DateTime           @default(now()) @db.Timestamptz(6)
+  mfaVerifiedAt     DateTime?          @db.Timestamptz(6)
+  lastSeenAt        DateTime           @default(now()) @db.Timestamptz(6)
+  expiresAt         DateTime           @db.Timestamptz(6)
+  revokedAt         DateTime?          @db.Timestamptz(6)
+  revokeReason      String?            @db.VarChar(80)
+  createdAt         DateTime           @default(now()) @db.Timestamptz(6)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens     RefreshToken[]
+  adminStepUpGrants AdminStepUpGrant[]
 
   @@index([userId, status])
   @@index([expiresAt])
@@ -1420,30 +1459,30 @@ model AIProposal {
 }
 
 model Reminder {
-  id               String               @id @default(uuid()) @db.Uuid
-  userId           String               @db.Uuid
-  createdByCommandId String?             @db.Uuid
-  title            String               @db.VarChar(200)
-  body             String?              @db.VarChar(500)
-  status           ReminderStatus       @default(ACTIVE)
-  timeZone         String               @db.VarChar(80)
-  startsOn         DateTime?            @db.Date
-  localTime        String?              @db.VarChar(12)
-  rrule            String?              @db.Text
-  oneTimeAt        DateTime?            @db.Timestamptz(6)
-  quietHoursPolicy Json                 @default("{}")
-  deliveryPolicy   Json                 @default("{}")
-  ruleVersion      Int                  @default(1)
-  expandedThrough  DateTime?            @db.Timestamptz(6)
-  createdAt        DateTime             @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime             @updatedAt @db.Timestamptz(6)
-  version          Int                  @default(1)
-  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  occurrences      ReminderOccurrence[]
+  id                 String               @id @default(uuid()) @db.Uuid
+  userId             String               @db.Uuid
+  createdByCommandId String?              @db.Uuid
+  title              String               @db.VarChar(200)
+  body               String?              @db.VarChar(500)
+  status             ReminderStatus       @default(ACTIVE)
+  timeZone           String               @db.VarChar(80)
+  startsOn           DateTime?            @db.Date
+  localTime          String?              @db.VarChar(12)
+  rrule              String?              @db.Text
+  oneTimeAt          DateTime?            @db.Timestamptz(6)
+  quietHoursPolicy   Json                 @default("{}")
+  deliveryPolicy     Json                 @default("{}")
+  ruleVersion        Int                  @default(1)
+  expandedThrough    DateTime?            @db.Timestamptz(6)
+  createdAt          DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime             @updatedAt @db.Timestamptz(6)
+  version            Int                  @default(1)
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurrences        ReminderOccurrence[]
 
+  @@unique([userId, createdByCommandId])
   @@index([userId, status])
   @@index([status, expandedThrough])
-  @@unique([userId, createdByCommandId])
   @@map("reminders")
 }
 
@@ -1513,22 +1552,22 @@ model Notification {
 }
 
 model DeliveryAttempt {
-  id                String              @id @default(uuid()) @db.Uuid
-  notificationId    String              @db.Uuid
+  id                 String              @id @default(uuid()) @db.Uuid
+  notificationId     String              @db.Uuid
   pushSubscriptionId String?             @db.Uuid
-  channel           NotificationChannel
-  targetKey         String              @db.VarChar(100)
-  provider          String              @db.VarChar(50)
-  attempt           Int
-  status            DeliveryStatus
-  providerMessageId String?             @db.VarChar(255)
-  errorCode         String?             @db.VarChar(100)
+  channel            NotificationChannel
+  targetKey          String              @db.VarChar(100)
+  provider           String              @db.VarChar(50)
+  attempt            Int
+  status             DeliveryStatus
+  providerMessageId  String?             @db.VarChar(255)
+  errorCode          String?             @db.VarChar(100)
   providerStatusCode Int?
-  attemptedAt       DateTime            @default(now()) @db.Timestamptz(6)
-  completedAt       DateTime?           @db.Timestamptz(6)
-  nextAttemptAt     DateTime?           @db.Timestamptz(6)
-  notification      Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  pushSubscription  PushSubscription?   @relation(fields: [pushSubscriptionId], references: [id], onDelete: SetNull)
+  attemptedAt        DateTime            @default(now()) @db.Timestamptz(6)
+  completedAt        DateTime?           @db.Timestamptz(6)
+  nextAttemptAt      DateTime?           @db.Timestamptz(6)
+  notification       Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  pushSubscription   PushSubscription?   @relation(fields: [pushSubscriptionId], references: [id], onDelete: SetNull)
 
   @@unique([notificationId, channel, targetKey, attempt])
   @@index([status, nextAttemptAt])
@@ -1838,6 +1877,7 @@ model BackgroundJob {
   completedAt      DateTime? @db.Timestamptz(6)
   expiresAt        DateTime? @db.Timestamptz(6)
   failureCode      String?   @db.VarChar(100)
+  version          Int       @default(1)
   user             User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([queue, deduplicationKey])
@@ -1938,34 +1978,143 @@ model AnalyticsPreference {
 }
 
 model AuditEvent {
-  id            String   @id @default(uuid()) @db.Uuid
-  actorUserId   String?  @db.Uuid
-  actorType     String   @db.VarChar(30)
-  action        String   @db.VarChar(120)
-  targetType    String?  @db.VarChar(80)
-  targetId      String?  @db.Uuid
-  reasonCode    String?  @db.VarChar(80)
-  correlationId String   @db.VarChar(80)
-  ipPrefix      String?  @db.VarChar(64)
-  metadata      Json     @default("{}")
-  occurredAt    DateTime @default(now()) @db.Timestamptz(6)
-  actor         User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  id            String       @id @default(uuid()) @db.Uuid
+  actorUserId   String?      @db.Uuid
+  actorType     String       @db.VarChar(30)
+  action        String       @db.VarChar(120)
+  targetType    String?      @db.VarChar(80)
+  targetId      String?      @db.Uuid
+  reasonCode    String?      @db.VarChar(80)
+  correlationId String       @db.VarChar(80)
+  ipPrefix      String?      @db.VarChar(64)
+  metadata      Json         @default("{}")
+  outcome       AuditOutcome @default(ALLOWED)
+  chainKey      String?      @db.VarChar(80)
+  sequence      BigInt?
+  previousHash  String?      @db.Char(64)
+  eventHash     String?      @unique @db.Char(64)
+  schemaVersion Int          @default(1)
+  occurredAt    DateTime     @default(now()) @db.Timestamptz(6)
+  actor         User?        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
+  @@unique([chainKey, sequence])
   @@index([actorUserId, occurredAt(sort: Desc)])
   @@index([targetType, targetId, occurredAt(sort: Desc)])
   @@index([correlationId])
   @@map("audit_events")
 }
 
+model AuditChainHead {
+  chainKey     String   @id @db.VarChar(80)
+  lastSequence BigInt   @default(0)
+  lastHash     String?  @db.Char(64)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("audit_chain_heads")
+}
+
 model FeatureFlag {
-  id          String   @id @default(uuid()) @db.Uuid
-  key         String   @unique @db.VarChar(120)
-  description String   @db.Text
-  enabled     Boolean  @default(false)
-  rules       Json     @default("{}")
-  version     Int      @default(1)
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  id              String    @id @default(uuid()) @db.Uuid
+  key             String    @unique @db.VarChar(120)
+  description     String    @db.Text
+  owner           String    @default("platform") @db.VarChar(120)
+  purpose         String    @default("Operational rollout control") @db.Text
+  audience        Json      @default("{}")
+  enabled         Boolean   @default(false)
+  safeDefault     Boolean   @default(false)
+  rules           Json      @default("{}")
+  reviewAt        DateTime? @db.Timestamptz(6)
+  expiresAt       DateTime? @db.Timestamptz(6)
+  rollbackPlan    String    @default("Disable the flag and verify service health.") @db.Text
+  updatedByUserId String?   @db.Uuid
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(6)
 
   @@map("feature_flags")
+}
+
+model AdminCase {
+  id                String          @id @default(uuid()) @db.Uuid
+  key               String          @unique @db.VarChar(80)
+  externalReference String?         @db.VarChar(160)
+  reasonCode        String          @db.VarChar(80)
+  summary           String          @db.VarChar(300)
+  status            AdminCaseStatus @default(OPEN)
+  openedByUserId    String          @db.Uuid
+  expiresAt         DateTime        @db.Timestamptz(6)
+  closedAt          DateTime?       @db.Timestamptz(6)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
+  version           Int             @default(1)
+  openedBy          User            @relation("AdminCaseOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([openedByUserId, status, expiresAt])
+  @@index([status, expiresAt])
+  @@map("admin_cases")
+}
+
+model OperationalMfaCredential {
+  userId              String               @id @db.Uuid
+  encryptedSecret     Bytes
+  encryptionKeyId     String               @db.VarChar(80)
+  recoveryCodeHashes  Json                 @default("[]")
+  status              OperationalMfaStatus @default(PENDING)
+  lastAcceptedCounter BigInt               @default(-1)
+  enrolledAt          DateTime?            @db.Timestamptz(6)
+  revokedAt           DateTime?            @db.Timestamptz(6)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
+  version             Int                  @default(1)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("operational_mfa_credentials")
+}
+
+model AdminStepUpGrant {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String            @db.Uuid
+  sessionId     String            @db.Uuid
+  tokenHash     String            @unique @db.Char(64)
+  scopes        Json
+  targetType    String?           @db.VarChar(80)
+  targetId      String?           @db.Uuid
+  method        AdminStepUpMethod
+  mfaVerifiedAt DateTime          @db.Timestamptz(6)
+  expiresAt     DateTime          @db.Timestamptz(6)
+  consumedAt    DateTime?         @db.Timestamptz(6)
+  createdAt     DateTime          @default(now()) @db.Timestamptz(6)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session       AuthSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sessionId, expiresAt])
+  @@index([expiresAt, consumedAt])
+  @@map("admin_step_up_grants")
+}
+
+model AdminApprovalRequest {
+  id                String              @id @default(uuid()) @db.Uuid
+  action            String              @db.VarChar(120)
+  targetUserId      String?             @db.Uuid
+  payload           Json
+  payloadHash       String              @db.Char(64)
+  caseId            String              @db.Uuid
+  requestedByUserId String              @db.Uuid
+  decidedByUserId   String?             @db.Uuid
+  status            AdminApprovalStatus @default(PENDING)
+  expiresAt         DateTime            @db.Timestamptz(6)
+  decidedAt         DateTime?           @db.Timestamptz(6)
+  executedAt        DateTime?           @db.Timestamptz(6)
+  createdAt         DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @db.Timestamptz(6)
+  version           Int                 @default(1)
+  targetUser        User?               @relation("AdminApprovalTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  requestedBy       User                @relation("AdminApprovalRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  decidedBy         User?               @relation("AdminApprovalDecidedBy", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([status, expiresAt, createdAt])
+  @@index([requestedByUserId, createdAt(sort: Desc)])
+  @@index([targetUserId, createdAt(sort: Desc)])
+  @@map("admin_approval_requests")
 }

@@ -16,7 +16,9 @@
     "test:coverage": "vitest run --coverage",
     "pretest:e2e": "corepack pnpm run build",
     "test:e2e": "node scripts/run-e2e.mjs",
-    "notifications:permissions:verify": "node scripts/verify-notification-permissions.mjs"
+    "notifications:permissions:verify": "node scripts/verify-notification-permissions.mjs",
+    "admin:migration:verify": "node scripts/verify-admin-migration.mjs",
+    "admin:bootstrap": "node scripts/bootstrap-platform-admin.mjs"
   },
   "dependencies": {
     "@focused/database": "workspace:*",

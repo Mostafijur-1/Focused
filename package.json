@@ -15,6 +15,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:drift:check": "node scripts/verify-schema-drift.mjs",
     "db:analytics:verify": "corepack pnpm --dir apps/web exec node scripts/verify-analytics-migration.mjs",
+    "db:admin:verify": "corepack pnpm --dir apps/web exec node scripts/verify-admin-migration.mjs",
     "dev": "corepack pnpm --filter @focused/web dev",
     "build": "corepack pnpm --filter @focused/web build",
     "start": "corepack pnpm --filter @focused/web start",
