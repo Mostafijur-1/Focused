@@ -755,8 +755,17 @@ paths:
       operationId: pauseFocusSession
       parameters:
         - $ref: "#/components/parameters/FocusSessionId"
-        - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/VersionedFocusCommand"
+                - type: object
+                  required: [reason]
+                  properties:
+                    reason: { type: [string, "null"], maxLength: 160 }
       responses:
         "200":
           description: Paused session
@@ -772,8 +781,11 @@ paths:
       operationId: resumeFocusSession
       parameters:
         - $ref: "#/components/parameters/FocusSessionId"
-        - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VersionedFocusCommand" }
       responses:
         "200":
           description: Resumed session
@@ -788,23 +800,168 @@ paths:
       operationId: completeFocusSession
       parameters:
         - $ref: "#/components/parameters/FocusSessionId"
-        - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              properties:
-                outcome: { type: string, maxLength: 2000 }
+            schema: { $ref: "#/components/schemas/TerminalFocusCommand" }
       responses:
         "200":
           description: Completed session
           content:
             application/json:
               schema: { $ref: "#/components/schemas/FocusSession" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /focus-sessions/{focusSessionId}/abandonment:
+    post:
+      tags: [Focus Sessions]
+      summary: Abandon an active Focus Session without converting it to completion
+      operationId: abandonFocusSession
+      parameters:
+        - $ref: "#/components/parameters/FocusSessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TerminalFocusCommand" }
+      responses:
+        "200":
+          description: Abandoned session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusSession" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /focus-sessions/{focusSessionId}/extension:
+    post:
+      tags: [Focus Sessions]
+      summary: Extend the active interval
+      operationId: extendFocusSession
+      parameters:
+        - $ref: "#/components/parameters/FocusSessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/VersionedFocusCommand"
+                - type: object
+                  required: [additionalSeconds]
+                  properties:
+                    additionalSeconds:
+                      { type: integer, minimum: 60, maximum: 10800 }
+      responses:
+        "200":
+          description: Extended session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusSession" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /focus-sessions/{focusSessionId}/interruptions:
+    post:
+      tags: [Focus Sessions]
+      summary: Log a private interruption without implicitly pausing the Timer
+      operationId: logFocusInterruption
+      parameters:
+        - $ref: "#/components/parameters/FocusSessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/VersionedFocusCommand"
+                - type: object
+                  required: [category, note]
+                  properties:
+                    category:
+                      type: string
+                      enum:
+                        [
+                          notification,
+                          phone,
+                          person,
+                          thought,
+                          environment,
+                          other,
+                        ]
+                    note: { type: [string, "null"], maxLength: 500 }
+      responses:
+        "200":
+          description: Interruption recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusSession" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /focus-sessions/{focusSessionId}/intervals/advance:
+    post:
+      tags: [Focus Sessions]
+      summary: Advance an eligible Pomodoro focus or break interval
+      operationId: advancePomodoroInterval
+      parameters:
+        - $ref: "#/components/parameters/FocusSessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/VersionedFocusCommand"
+                - type: object
+                  required: [skip]
+                  properties:
+                    skip: { type: boolean }
+      responses:
+        "200":
+          description: Next interval started from an authoritative timestamp
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusSession" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /pomodoro-presets:
+    post:
+      tags: [Focus Sessions]
+      summary: Create a private Pomodoro preset
+      operationId: createPomodoroPreset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePomodoroPresetRequest" }
+      responses:
+        "201":
+          description: Preset created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PomodoroPreset" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /pomodoro-presets/{presetId}:
+    patch:
+      tags: [Focus Sessions]
+      summary: Update an owned Pomodoro preset using optimistic concurrency
+      operationId: updatePomodoroPreset
+      parameters:
+        - name: presetId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CreatePomodoroPresetRequest"
+                - type: object
+                  required: [expectedVersion]
+                  properties:
+                    expectedVersion: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Preset updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PomodoroPreset" }
         "409": { $ref: "#/components/responses/Conflict" }
   /goals:
     get:
@@ -2190,29 +2347,150 @@ components:
           plannedSeconds,
           startedAt,
           pausedSeconds,
+          focusedSeconds,
+          interruptionCount,
+          timeZone,
           version,
+          serverNow,
         ]
       properties:
         id: { $ref: "#/components/schemas/Uuid" }
         goalId: { type: [string, "null"], format: uuid }
-        kind: { type: string, enum: [DEEP_WORK, POMODORO, CUSTOM] }
-        status: { type: string, enum: [RUNNING, PAUSED, COMPLETED, ABANDONED] }
+        goalTitle: { type: [string, "null"] }
+        pomodoroPresetId: { type: [string, "null"], format: uuid }
+        kind: { type: string, enum: [deep_work, pomodoro, custom] }
+        status: { type: string, enum: [running, paused, completed, abandoned] }
         intent: { type: string }
         plannedSeconds: { type: integer, minimum: 60, maximum: 43200 }
         pausedSeconds: { type: integer, minimum: 0 }
+        focusedSeconds: { type: integer, minimum: 0 }
+        interruptionCount: { type: integer, minimum: 0 }
+        timeZone: { type: string, maxLength: 80 }
         startedAt: { type: string, format: date-time }
         completedAt: { type: [string, "null"], format: date-time }
+        abandonedAt: { type: [string, "null"], format: date-time }
         outcome: { type: [string, "null"] }
         version: { type: integer, minimum: 1 }
+        serverNow: { type: string, format: date-time }
+        activeInterval:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/FocusInterval"
+        pomodoroConfig:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/PomodoroConfig"
     StartFocusSessionRequest:
       type: object
       additionalProperties: false
-      required: [kind, intent, plannedSeconds]
+      required:
+        [
+          kind,
+          intent,
+          plannedSeconds,
+          goalId,
+          pomodoroPresetId,
+          pomodoroConfig,
+          timeZone,
+          clientCommandId,
+        ]
       properties:
-        goalId: { type: string, format: uuid }
-        kind: { type: string, enum: [DEEP_WORK, POMODORO, CUSTOM] }
+        goalId: { type: [string, "null"], format: uuid }
+        pomodoroPresetId: { type: [string, "null"], format: uuid }
+        kind: { type: string, enum: [deep_work, pomodoro, custom] }
         intent: { type: string, minLength: 1, maxLength: 300 }
         plannedSeconds: { type: integer, minimum: 60, maximum: 43200 }
+        pomodoroConfig:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/PomodoroConfig"
+        timeZone: { type: string, minLength: 1, maxLength: 80 }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+    VersionedFocusCommand:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, clientCommandId]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+    TerminalFocusCommand:
+      allOf:
+        - $ref: "#/components/schemas/VersionedFocusCommand"
+        - type: object
+          required: [outcome]
+          properties:
+            outcome: { type: [string, "null"], maxLength: 2000 }
+    FocusInterval:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          kind,
+          status,
+          cycleNumber,
+          plannedSeconds,
+          elapsedSeconds,
+          remainingSeconds,
+          overtimeSeconds,
+          startedAt,
+          endedAt,
+        ]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        kind: { type: string, enum: [focus, short_break, long_break] }
+        status: { type: string, enum: [running, paused, completed, skipped] }
+        cycleNumber: { type: integer, minimum: 1, maximum: 12 }
+        plannedSeconds: { type: integer, minimum: 60, maximum: 43200 }
+        elapsedSeconds: { type: integer, minimum: 0 }
+        remainingSeconds: { type: integer, minimum: 0 }
+        overtimeSeconds: { type: integer, minimum: 0 }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: [string, "null"], format: date-time }
+    PomodoroConfig:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          focusSeconds,
+          shortBreakSeconds,
+          longBreakSeconds,
+          cycles,
+          longBreakEvery,
+          autoStartBreaks,
+          autoStartFocus,
+          audioEnabled,
+          vibrationEnabled,
+        ]
+      properties:
+        focusSeconds: { type: integer, minimum: 60, maximum: 10800 }
+        shortBreakSeconds: { type: integer, minimum: 60, maximum: 3600 }
+        longBreakSeconds: { type: integer, minimum: 60, maximum: 7200 }
+        cycles: { type: integer, minimum: 1, maximum: 12 }
+        longBreakEvery: { type: integer, minimum: 1, maximum: 12 }
+        autoStartBreaks: { type: boolean, default: false }
+        autoStartFocus: { type: boolean, default: false }
+        audioEnabled: { type: boolean, default: true }
+        vibrationEnabled: { type: boolean, default: false }
+    PomodoroPreset:
+      allOf:
+        - $ref: "#/components/schemas/PomodoroConfig"
+        - type: object
+          required: [id, name, isDefault, version]
+          properties:
+            id: { $ref: "#/components/schemas/Uuid" }
+            name: { type: string, minLength: 1, maxLength: 80 }
+            isDefault: { type: boolean }
+            version: { type: integer, minimum: 1 }
+    CreatePomodoroPresetRequest:
+      type: object
+      additionalProperties: false
+      required: [name, config, isDefault, clientCommandId]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        config: { $ref: "#/components/schemas/PomodoroConfig" }
+        isDefault: { type: boolean }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
     Goal:
       type: object
       additionalProperties: false

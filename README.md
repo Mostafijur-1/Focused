@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 through 6 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, and Goals foundations:
+Milestones 1 through 7 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, and authoritative Focus Timer foundations:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -26,6 +26,7 @@ Milestones 1 through 6 establish the production, Authentication, PostgreSQL pers
 - A psychologically safe Habit System with immutable schedule versions, local-date occurrences, corrections, pauses, archive/restore, owner privacy, and transactional domain events
 - Responsive native Bangla/English habit workflows with strict forms, accessible states, bounded history, and a privacy-minimized Offline check-in queue
 - Versioned private Goals with bounded hierarchy, weighted Milestones/Key Results, auditable check-ins, explicit transitions, and optimistic concurrency
+- Server-authoritative Deep Work and Pomodoro sessions with pause-aware timing, private presets, interruption capture, offline terminal replay, and transactional events
 - Append-only Life Vision revisions and a capacity-aware Weekly Plan that warns without blocking user agency
 - Responsive native Bangla/English goal and planning workflows with private offline-read fallback and WCAG-oriented states
 
@@ -189,6 +190,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Dashboard Architecture and Operations](docs/dashboard.md)
 - [Habit System Architecture and Operations](docs/habits.md)
 - [Goals, Life Vision, and Weekly Planning](docs/goals.md)
+- [Focus Timer and Pomodoro](docs/focus-timer.md)
 
 ## Contribution workflow
 
