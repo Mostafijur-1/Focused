@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { SignUpForm } from "@/features/auth/ui/auth-forms";
+import { GoogleAuthPanel } from "@/features/auth/ui/auth-forms";
 import { isLocale } from "@/i18n/config";
 
 export const metadata: Metadata = { title: "Create account" };
@@ -13,5 +13,5 @@ export default async function SignUpPage({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  return <SignUpForm locale={locale} />;
+  return <GoogleAuthPanel locale={locale} intent="sign-up" />;
 }

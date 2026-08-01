@@ -1,47 +1,41 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
-import { SignInForm, SignUpForm } from "@/features/auth/ui/auth-forms";
-import { AuthProvider } from "@/features/auth/ui/auth-provider";
+import { GoogleAuthPanel } from "@/features/auth/ui/auth-forms";
+import { getAuthCopy } from "@/features/auth/ui/auth-copy";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
 }));
 
-describe("authentication forms", () => {
-  it("renders native Bangla sign-in copy and accessible fields", () => {
-    render(
-      <AuthProvider>
-        <SignInForm locale="bn-BD" />
-      </AuthProvider>,
-    );
+describe("Google-only Authentication", () => {
+  it("renders native Bangla Google Authentication without password fields", () => {
+    const copy = getAuthCopy("bn-BD");
+
+    render(<GoogleAuthPanel locale="bn-BD" intent="sign-in" />);
+
     expect(
-      screen.getByRole("heading", { name: "আবার স্বাগতম" }),
+      screen.getByRole("heading", { name: copy.signInTitle }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Email")).toHaveAttribute(
-      "autocomplete",
-      "email",
-    );
-    expect(screen.getByLabelText("Password")).toHaveAttribute(
-      "autocomplete",
-      "current-password",
-    );
+    expect(
+      screen.getByRole("button", { name: copy.google }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
   });
 
-  it("prevents invalid registration without sending a request", async () => {
-    const request = vi.spyOn(globalThis, "fetch");
-    const user = userEvent.setup();
-    render(
-      <AuthProvider>
-        <SignUpForm locale="en" />
-      </AuthProvider>,
-    );
-    await user.type(screen.getByLabelText("Your name"), "P");
-    await user.type(screen.getByLabelText("Email"), "bad-email");
-    await user.type(screen.getByLabelText("Password"), "weak");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
-    expect(await screen.findAllByRole("alert")).not.toHaveLength(0);
-    expect(request).not.toHaveBeenCalled();
-    request.mockRestore();
+  it("uses the same secure Google flow for account creation", () => {
+    const copy = getAuthCopy("en");
+
+    render(<GoogleAuthPanel locale="en" intent="sign-up" />);
+
+    expect(
+      screen.getByRole("heading", { name: copy.signUpTitle }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with Google" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/never sees or stores your Google password/i),
+    ).toBeInTheDocument();
   });
 });

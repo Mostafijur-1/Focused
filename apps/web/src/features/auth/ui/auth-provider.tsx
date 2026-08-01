@@ -16,7 +16,6 @@ type AuthStatus = "loading" | "authenticated" | "anonymous";
 interface AuthContextValue {
   readonly status: AuthStatus;
   readonly session: ClientSession | null;
-  signIn(email: string, password: string): Promise<ClientSession>;
   refresh(): Promise<ClientSession | null>;
   signOut(): Promise<void>;
 }
@@ -68,18 +67,6 @@ export function AuthProvider({
     () => ({
       status,
       session,
-      async signIn(email, password) {
-        const nextSession = await authFetch<ClientSession>(
-          "/api/v1/auth/login",
-          {
-            method: "POST",
-            body: JSON.stringify({ email, password }),
-          },
-        );
-        setSession(nextSession);
-        setStatus("authenticated");
-        return nextSession;
-      },
       refresh,
       async signOut() {
         const csrfToken = readCsrfToken();
