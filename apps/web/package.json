@@ -15,13 +15,15 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "pretest:e2e": "corepack pnpm run build",
-    "test:e2e": "node scripts/run-e2e.mjs"
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "notifications:permissions:verify": "node scripts/verify-notification-permissions.mjs"
   },
   "dependencies": {
     "@focused/database": "workspace:*",
     "@focused/design-system": "workspace:*",
     "@hookform/resolvers": "5.5.7",
     "@node-rs/argon2": "2.0.2",
+    "@upstash/qstash": "2.11.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "jose": "6.2.5",
@@ -33,6 +35,7 @@
     "react-hook-form": "7.83.0",
     "shadcn": "4.16.0",
     "tailwind-merge": "3.6.0",
+    "web-push": "3.6.7",
     "zod": "4.4.3"
   },
   "devDependencies": {
@@ -47,6 +50,7 @@
     "@types/pg": "8.15.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "@types/web-push": "3.6.4",
     "@vitest/coverage-v8": "4.1.10",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.12",
