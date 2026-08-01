@@ -6,11 +6,21 @@ import { apiFailure } from "@/lib/http/api-response";
 import { getRequestId } from "@/lib/http/request-context";
 import { logger } from "@/lib/observability/logger";
 
-export async function handleApiRoute(
+export function handleApiRoute(
   request: NextRequest,
   operation: (requestId: string) => Promise<NextResponse>,
+  failureMessage?: string,
+): Promise<NextResponse>;
+export function handleApiRoute(
+  request: NextRequest,
+  operation: (requestId: string) => Promise<Response>,
+  failureMessage?: string,
+): Promise<Response>;
+export async function handleApiRoute(
+  request: NextRequest,
+  operation: (requestId: string) => Promise<Response>,
   failureMessage = "API request failed",
-): Promise<NextResponse> {
+): Promise<Response> {
   const requestId = getRequestId(request.headers);
   try {
     return await operation(requestId);

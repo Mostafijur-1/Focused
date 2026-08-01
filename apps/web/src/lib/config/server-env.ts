@@ -2,6 +2,11 @@ import "server-only";
 
 import { z } from "zod";
 
+const optionalSecret = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const serverEnvironmentSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -22,6 +27,20 @@ const serverEnvironmentSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+  GROQ_API_KEY: optionalSecret,
+  GROQ_MODEL: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .default("llama-3.3-70b-versatile"),
+  GROQ_ZERO_DATA_RETENTION: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  GEMINI_API_KEY: optionalSecret,
+  GEMINI_MODEL: z.string().trim().min(1).max(120).default("gemini-3.6-flash"),
+  GEMINI_SERVICE_TIER: z.enum(["unpaid", "paid"]).default("unpaid"),
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
@@ -52,6 +71,12 @@ export function getServerEnvironment(): ServerEnvironment {
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
     GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
+    GROQ_MODEL: process.env.GROQ_MODEL,
+    GROQ_ZERO_DATA_RETENTION: process.env.GROQ_ZERO_DATA_RETENTION,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
+    GEMINI_SERVICE_TIER: process.env.GEMINI_SERVICE_TIER,
   });
 
   if (!result.success) {
