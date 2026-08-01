@@ -103,6 +103,7 @@ The complete Authentication variable catalog and key-generation instructions are
 | `pnpm test`              | Run unit and component tests                    |
 | `pnpm test:coverage`     | Run enforced coverage thresholds                |
 | `pnpm test:e2e`          | Run Playwright browser/accessibility tests      |
+| `pnpm test:deployment`   | Test deployment validation and smoke controls   |
 | `pnpm api:lint`          | Validate the OpenAPI 3.1 contract               |
 | `pnpm db:validate`       | Validate the Prisma data model                  |
 | `pnpm db:migrate:deploy` | Apply committed migrations safely               |
@@ -204,6 +205,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Analytics, Reports, Exports, and Gamification](docs/analytics.md)
 - [Admin operations, RBAC, MFA, audit, and bootstrap](docs/admin-operations.md)
 - [Milestone 12 quality and release evidence](docs/quality/README.md)
+- [Deployment, rollback, observability, and incident operations](docs/operations/README.md)
 
 ## Contribution workflow
 
