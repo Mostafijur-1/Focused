@@ -36,7 +36,6 @@ CREATE INDEX "goals_userId_archivedAt_priority_position_idx"
 ALTER TABLE "milestones"
   ADD COLUMN "weight" DECIMAL(8,4) NOT NULL DEFAULT 1,
   ADD COLUMN "clientCommandId" UUID,
-  ADD COLUMN "publishedByCommandId" UUID,
   ADD CONSTRAINT "milestones_policy_check" CHECK ("weight" > 0 AND "position" >= 0 AND "version" > 0);
 CREATE UNIQUE INDEX "milestones_goalId_clientCommandId_key" ON "milestones"("goalId", "clientCommandId");
 
@@ -114,6 +113,7 @@ CREATE INDEX "goal_status_transitions_goalId_occurredAt_idx" ON "goal_status_tra
 ALTER TABLE "life_visions"
   ADD COLUMN "status" "LifeVisionStatus" NOT NULL DEFAULT 'DRAFT',
   ADD COLUMN "clientCommandId" UUID,
+  ADD COLUMN "publishedByCommandId" UUID,
   ADD COLUMN "publishedAt" TIMESTAMPTZ(6),
   ADD COLUMN "version" INTEGER NOT NULL DEFAULT 1,
   ADD CONSTRAINT "life_visions_policy_check" CHECK (
