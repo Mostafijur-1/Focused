@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
+import { MarketingMobileNavigation } from "@/components/shell/marketing-mobile-navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { getAlternateLocale, type Locale } from "@/i18n/config";
@@ -19,7 +20,8 @@ export function MarketingHeader({ locale, copy }: MarketingHeaderProps) {
     <header className="focused-glass sticky top-0 z-50 border-x-0 border-t-0">
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link href={`/${locale}`} className="rounded-xl" aria-label="Focused">
-          <BrandMark />
+          <BrandMark compact className="sm:hidden" />
+          <BrandMark className="hidden sm:inline-flex" />
         </Link>
 
         <nav
@@ -71,6 +73,7 @@ export function MarketingHeader({ locale, copy }: MarketingHeaderProps) {
           >
             {copy.signIn}
           </Link>
+          <MarketingMobileNavigation locale={locale} copy={copy} />
         </div>
       </div>
     </header>

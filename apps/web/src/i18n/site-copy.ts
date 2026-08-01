@@ -1,6 +1,10 @@
 import type { Locale } from "./config";
 
 const bnBD = {
+  openMenu: "মেনু খুলুন",
+  closeMenu: "মেনু বন্ধ করুন",
+  accountActions: "অ্যাকাউন্টের বিকল্প",
+  createAccount: "অ্যাকাউন্ট তৈরি করুন",
   languageName: "বাংলা",
   alternateLanguageName: "English",
   skipToContent: "মূল অংশে যান",
@@ -57,6 +61,10 @@ const bnBD = {
 export type SiteCopy = { readonly [Key in keyof typeof bnBD]: string };
 
 const english: SiteCopy = {
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
+  accountActions: "Account options",
+  createAccount: "Create account",
   languageName: "English",
   alternateLanguageName: "বাংলা",
   skipToContent: "Skip to main content",
