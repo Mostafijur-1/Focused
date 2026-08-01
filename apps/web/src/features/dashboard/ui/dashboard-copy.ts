@@ -92,7 +92,8 @@ const bangla: DashboardCopy = {
   prioritiesProgress: (complete, total) =>
     `${total}টির মধ্যে ${complete}টি সম্পন্ন`,
   activeSessionTitle: "Focus Session",
-  noSession: "এখন কোনো Focus Session চলছে না। Timer Milestone 7-এ চালু হবে।",
+  noSession:
+    "এখন কোনো Focus Session চলছে না। Focus Timer থেকে একটি Session শুরু করুন।",
   activeSession: "চলছে",
   pausedSession: "বিরতিতে",
   weeklyTitle: "এই সপ্তাহ",
@@ -169,7 +170,7 @@ const english: DashboardCopy = {
   noPriorities: "No priority has been set for today. Start small.",
   prioritiesProgress: (complete, total) => `${complete} of ${total} complete`,
   activeSessionTitle: "Focus Session",
-  noSession: "No Focus Session is active. Timer arrives in Milestone 7.",
+  noSession: "No Focus Session is active. Start one from Focus Timer.",
   activeSession: "Running",
   pausedSession: "Paused",
   weeklyTitle: "This week",
