@@ -4,7 +4,7 @@
 
 This model covers password and OAuth sign-in, verification/recovery, browser sessions, RBAC resolution, security email delivery, and Authentication audit data. Protected assets are account control, refresh credentials, signing/encryption/provider secrets, personal identity data, permissions, and audit integrity.
 
-Trust boundaries are the browser, Vercel Route Handlers, Neon PostgreSQL, Upstash Redis, Resend, and Google/GitHub/Microsoft endpoints. The application treats all browser input, proxy headers outside the Vercel boundary, provider callbacks, and database state as untrusted until validated.
+Trust boundaries are the browser, Vercel Route Handlers, Neon PostgreSQL, Upstash Redis, Resend, and Google endpoints. The application treats all browser input, proxy headers outside the Vercel boundary, provider callbacks, and database state as untrusted until validated.
 
 ## Threats and controls
 

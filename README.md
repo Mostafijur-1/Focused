@@ -17,7 +17,7 @@ Milestones 1 through 6 establish the production, Authentication, PostgreSQL pers
 - GitHub Actions, SonarQube, Docker, and Vercel configuration
 - Password registration, native Bangla/English verification and recovery flows
 - EdDSA access tokens, opaque rotating refresh tokens, replay-family revocation, and session controls
-- Google, GitHub, and Microsoft OAuth Authorization Code + server-owned PKCE adapters
+- Google OAuth Authorization Code with server-owned PKCE, alongside email/password Authentication
 - PostgreSQL identity migration, Prisma/Neon runtime adapter, RBAC, audit events, CSRF/origin checks, and distributed rate-limit adapter
 - Complete product-data schema with ownership foreign keys, native invariants, partial hot-path indexes, and versioned configuration seed
 - Idempotency, transactional outbox helpers, encrypted webhook inbox, leased background jobs, migration drift checks, and PostgreSQL integration tests

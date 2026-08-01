@@ -36,7 +36,7 @@ The REST boundary is mobile-neutral at the use-case and resource level. Browser 
 | Rate limiting   | Upstash Redis in production; production fails closed if it is absent; bounded in-memory adapter is development-only      |
 | Audit           | Login failure, registration, verification, recovery, session creation/revocation, replay, and OAuth identity events      |
 
-OAuth provider access and refresh tokens are not persisted. Only the stable provider subject and verified provider email are stored. Google and Microsoft ID tokens are verified against remote JWKS; GitHub requires its primary verified email.
+OAuth access and refresh tokens are not persisted. Only Google's stable provider subject and verified email are stored. Google ID tokens are verified against Google's remote JWKS.
 
 Privileged role definitions exist so the data model does not need to change later, but Milestone 2 grants no privileged permissions. Admin permission assignment and mandatory MFA/step-up enforcement belong to Milestone 11; privileged capabilities must not be granted before that control exists.
 
@@ -63,12 +63,10 @@ Copy `apps/web/.env.example` to `apps/web/.env.local`. Required for password Aut
 - `RESEND_API_KEY` and `AUTH_EMAIL_FROM`: transactional security delivery.
 - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`: mandatory in production.
 
-OAuth additionally requires `AUTH_DATA_ENCRYPTION_KEY_BASE64` (exactly 32 random bytes) and both client values for any enabled provider. Callback URLs are exact:
+Google OAuth additionally requires `AUTH_DATA_ENCRYPTION_KEY_BASE64` (exactly 32 random bytes), `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET`. The callback URL is exact:
 
 ```text
 https://YOUR_HOST/api/v1/auth/oauth/google/callback
-https://YOUR_HOST/api/v1/auth/oauth/github/callback
-https://YOUR_HOST/api/v1/auth/oauth/microsoft/callback
 ```
 
 Generate local key material with OpenSSL, then base64-encode the complete PEM files using a trusted local tool. Keep private and encryption keys only in encrypted secret storage; never paste them into source, issues, logs, or `NEXT_PUBLIC_*` variables.
@@ -105,4 +103,4 @@ pnpm build
 pnpm test:e2e
 ```
 
-Live Google/GitHub/Microsoft and Resend smoke tests require controlled provider credentials and must be run in an isolated Preview environment before production enablement.
+Live Google and Resend smoke tests require controlled provider credentials and must be run in an isolated Preview environment before production enablement.

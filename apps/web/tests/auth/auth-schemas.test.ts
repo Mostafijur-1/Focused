@@ -1,6 +1,7 @@
 import {
   loginRequestSchema,
   oauthCallbackQuerySchema,
+  oauthProviderSchema,
   oauthStartRequestSchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
@@ -17,6 +18,9 @@ describe("authentication transport schemas", () => {
         timeZone: "Asia/Dhaka",
       }).success,
     ).toBe(true);
+    expect(oauthProviderSchema.safeParse("google").success).toBe(true);
+    expect(oauthProviderSchema.safeParse("github").success).toBe(false);
+    expect(oauthProviderSchema.safeParse("microsoft").success).toBe(false);
   });
 
   it("rejects over-posting, weak credentials, and malformed OAuth callbacks", () => {

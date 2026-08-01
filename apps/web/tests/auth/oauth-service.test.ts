@@ -76,9 +76,10 @@ describe("OAuthService", () => {
 
   it("fails closed for disabled providers and consumed state", async () => {
     const fixture = createFixture();
+    const disabled = createFixture(new Map());
     await expect(
-      fixture.service.start({
-        provider: "github",
+      disabled.service.start({
+        provider: "google",
         locale: "en",
         timeZone: "UTC",
         returnTo: "/en/auth-complete",
@@ -96,7 +97,9 @@ describe("OAuthService", () => {
   });
 });
 
-function createFixture() {
+function createFixture(
+  providers?: ReadonlyMap<"google", OAuthProviderAdapter>,
+) {
   const repository = {
     createTransaction: vi.fn(async () => undefined),
     consumeTransaction: vi.fn<OAuthRepository["consumeTransaction"]>(
@@ -138,7 +141,7 @@ function createFixture() {
   return {
     service: new OAuthService({
       repository,
-      providers: new Map([["google", provider]]),
+      providers: providers ?? new Map([["google", provider]]),
       authService,
       tokens,
       clock,
