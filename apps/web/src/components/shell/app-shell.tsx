@@ -2,6 +2,7 @@ import {
   CalendarDays,
   ListChecks,
   LayoutDashboard,
+  MessagesSquare,
   Target,
   TimerReset,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { key: "dashboard", icon: LayoutDashboard, available: true },
   { key: "focus", icon: TimerReset, available: true },
+  { key: "coach", icon: MessagesSquare, available: true },
   { key: "habits", icon: ListChecks, available: true },
   { key: "goals", icon: Target, available: true },
   { key: "week", icon: CalendarDays, available: true },
@@ -72,7 +74,7 @@ export function AppShell({ children, locale, active }: AppShellProps) {
       </main>
 
       <nav
-        className="focused-glass fixed inset-x-0 bottom-0 z-40 grid min-h-18 grid-cols-5 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="focused-glass fixed inset-x-0 bottom-0 z-40 grid min-h-18 grid-cols-6 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
         aria-label={copy.mobileNavigationLabel}
       >
         {navigation.map((item) => (
@@ -151,6 +153,7 @@ const shellCopy = {
     mobileNavigationLabel: "মোবাইল নেভিগেশন",
     dashboard: "Dashboard",
     focus: "Focus",
+    coach: "AI Coach",
     habits: "অভ্যাস",
     goals: "লক্ষ্য",
     week: "সপ্তাহ",
@@ -162,6 +165,7 @@ const shellCopy = {
     mobileNavigationLabel: "Mobile navigation",
     dashboard: "Dashboard",
     focus: "Focus",
+    coach: "AI Coach",
     habits: "Habits",
     goals: "Goals",
     week: "Week",

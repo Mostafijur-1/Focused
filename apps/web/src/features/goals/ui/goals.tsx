@@ -355,7 +355,9 @@ export function Goals({ locale }: { readonly locale: Locale }) {
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-primary text-sm font-semibold">{copy.eyebrow}</p>
+          <p className="text-foreground text-sm font-semibold">
+            {copy.eyebrow}
+          </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
             {copy.pageTitle}
           </h1>
@@ -595,6 +597,7 @@ function GoalCard({
           <div
             className="bg-muted h-2 overflow-hidden rounded-full"
             role="progressbar"
+            aria-label={`${goal.title}: ${copy.progress}`}
             aria-valuenow={goal.progress}
             aria-valuemin={0}
             aria-valuemax={100}
