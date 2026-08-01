@@ -1,4 +1,5 @@
 import {
+  Bell,
   CalendarDays,
   ListChecks,
   LayoutDashboard,
@@ -17,12 +18,13 @@ import { getSiteCopy } from "@/i18n/site-copy";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { key: "dashboard", icon: LayoutDashboard, available: true },
-  { key: "focus", icon: TimerReset, available: true },
-  { key: "coach", icon: MessagesSquare, available: true },
-  { key: "habits", icon: ListChecks, available: true },
-  { key: "goals", icon: Target, available: true },
-  { key: "week", icon: CalendarDays, available: true },
+  { key: "dashboard", icon: LayoutDashboard, available: true, mobile: true },
+  { key: "focus", icon: TimerReset, available: true, mobile: true },
+  { key: "coach", icon: MessagesSquare, available: true, mobile: true },
+  { key: "habits", icon: ListChecks, available: true, mobile: true },
+  { key: "goals", icon: Target, available: true, mobile: true },
+  { key: "week", icon: CalendarDays, available: true, mobile: true },
+  { key: "notifications", icon: Bell, available: true, mobile: false },
 ] as const;
 
 interface AppShellProps {
@@ -77,19 +79,33 @@ export function AppShell({ children, locale, active }: AppShellProps) {
         className="focused-glass fixed inset-x-0 bottom-0 z-40 grid min-h-18 grid-cols-6 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
         aria-label={copy.mobileNavigationLabel}
       >
-        {navigation.map((item) => (
-          <NavigationItem
-            key={item.key}
-            active={item.key === active}
-            available={item.available}
-            href={`/${locale}/${item.key}` as Route}
-            icon={item.icon}
-            label={copy[item.key]}
-            comingSoon={copy.comingSoon}
-            mobile
-          />
-        ))}
+        {navigation
+          .filter((item) => item.mobile)
+          .map((item) => (
+            <NavigationItem
+              key={item.key}
+              active={item.key === active}
+              available={item.available}
+              href={`/${locale}/${item.key}` as Route}
+              icon={item.icon}
+              label={copy[item.key]}
+              comingSoon={copy.comingSoon}
+              mobile
+            />
+          ))}
       </nav>
+
+      <Link
+        href={`/${locale}/notifications` as Route}
+        className={cn(
+          "focused-glass fixed right-4 bottom-24 z-40 flex size-12 items-center justify-center rounded-full border shadow-lg md:hidden",
+          active === "notifications" && "bg-primary text-primary-foreground",
+        )}
+        aria-label={copy.notifications}
+        aria-current={active === "notifications" ? "page" : undefined}
+      >
+        <Bell className="size-5" aria-hidden="true" />
+      </Link>
     </div>
   );
 }
@@ -157,6 +173,7 @@ const shellCopy = {
     habits: "অভ্যাস",
     goals: "লক্ষ্য",
     week: "সপ্তাহ",
+    notifications: "Notification",
     comingSoon: "শিগগিরই আসছে",
   },
   en: {
@@ -169,6 +186,7 @@ const shellCopy = {
     habits: "Habits",
     goals: "Goals",
     week: "Week",
+    notifications: "Notifications",
     comingSoon: "Coming soon",
   },
 } as const;
