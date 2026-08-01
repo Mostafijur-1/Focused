@@ -1,6 +1,6 @@
 # Focused REST API
 
-The canonical machine-readable contract is [`openapi.yaml`](./openapi.yaml). It uses OpenAPI 3.1 to describe Focused's own REST interface; OpenAPI is not an AI provider. Groq and Gemini are separate infrastructure adapters planned for Milestone 8.
+The canonical machine-readable contract is [`openapi.yaml`](./openapi.yaml). It uses OpenAPI 3.1 to describe Focused's own REST interface; OpenAPI is not an AI provider. Groq and Gemini are separate infrastructure adapters behind the AI application ports.
 
 ## Conventions
 
@@ -24,7 +24,7 @@ The CI quality gate runs the same command. Route handlers must update their Zod 
 
 ## Implemented endpoints
 
-Milestones 1–5 implement health, registration, email verification, sign-in, refresh, logout, password recovery/reset, OAuth start/callback, member-owned session listing/revocation, Dashboard projections/preferences, and the owner-scoped Habit System. Habit creation/check-ins use body-level `clientCommandId` values for retry safety and `expectedVersion` for explicit concurrency. The canonical paths and schemas are in OpenAPI; operational details are in [`../docs/authentication.md`](../docs/authentication.md), [`../docs/dashboard.md`](../docs/dashboard.md), and [`../docs/habits.md`](../docs/habits.md).
+Milestones 1–8 implement health, Authentication, member sessions, Dashboard, Habits, Goals and planning, Focus Timer, AI Coach, AI Daily Review, and explicit AI proposal decisions. Retryable commands use body-level `clientCommandId` values; mutable aggregates use `expectedVersion`. AI Coach responses use typed SSE, while Daily Review responses are Zod-validated structured JSON. The canonical paths and schemas are in OpenAPI; operations are documented under `docs/`, including [`../docs/ai-coach.md`](../docs/ai-coach.md).
 
 Other paths remain approved forward contracts and are implemented milestone by milestone. Unimplemented contracts must not be deployed as handlers returning misleading success states.
 

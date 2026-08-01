@@ -1365,77 +1365,109 @@ paths:
                         type: array
                         items: { $ref: "#/components/schemas/Notification" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-  /ai/runs:
+  /ai:
+    get:
+      tags: [AI]
+      summary: Read the current member AI Coach overview
+      operationId: getAIOverview
+      responses:
+        "200":
+          description: Recent conversations, Daily Review, and pending proposals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required:
+                      [
+                        available,
+                        conversations,
+                        pendingProposals,
+                        allowedScopes,
+                      ]
+                    properties:
+                      available: { type: boolean }
+                      unavailableReason:
+                        {
+                          type: [string, "null"],
+                          enum: [not_configured, privacy_policy, null],
+                        }
+                      conversations: { type: array, items: { type: object } }
+                      latestDailyReview:
+                        {
+                          anyOf:
+                            [
+                              { $ref: "#/components/schemas/AIRun" },
+                              { type: "null" },
+                            ],
+                        }
+                      pendingProposals:
+                        {
+                          type: array,
+                          items: { $ref: "#/components/schemas/AIProposal" },
+                        }
+                      allowedScopes:
+                        {
+                          type: array,
+                          items:
+                            { $ref: "#/components/schemas/AIContextScope" },
+                        }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /ai/coach/messages:
     post:
       tags: [AI]
-      summary: Create a scoped AI run
-      operationId: createAIRun
-      parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+      summary: Create and stream one scoped AI Coach turn
+      operationId: streamCoachMessage
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/CreateAIRunRequest" }
-      responses:
-        "202":
-          description: AI run accepted
-          headers:
-            Location: { schema: { type: string } }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/AIRun" }
-        "422": { $ref: "#/components/responses/ValidationProblem" }
-        "429": { $ref: "#/components/responses/RateLimited" }
-  /ai/runs/{aiRunId}:
-    get:
-      tags: [AI]
-      summary: Get AI run status and validated output
-      operationId: getAIRun
-      parameters:
-        - name: aiRunId
-          in: path
-          required: true
-          schema: { $ref: "#/components/schemas/Uuid" }
+            schema: { $ref: "#/components/schemas/CoachMessageRequest" }
       responses:
         "200":
-          description: AI run state
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/AIRun" }
-        "404": { $ref: "#/components/responses/NotFound" }
-  /ai/runs/{aiRunId}/events:
-    get:
-      tags: [AI]
-      summary: Stream typed AI run events using SSE
-      operationId: streamAIRunEvents
-      parameters:
-        - name: aiRunId
-          in: path
-          required: true
-          schema: { $ref: "#/components/schemas/Uuid" }
-        - name: Last-Event-ID
-          in: header
-          required: false
-          schema: { type: string, maxLength: 160 }
-      responses:
-        "200":
-          description: Server-sent event stream
+          description: Typed SSE events run.started, message.delta, citation, usage, warning, run.completed, or run.failed
           content:
             text/event-stream:
               schema: { type: string }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /ai/reviews/daily:
+    post:
+      tags: [AI]
+      summary: Generate today's scoped AI Daily Review or deterministic fallback
+      operationId: createDailyAIReview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DailyReviewRequest" }
+      responses:
+        "201":
+          description: Completed and validated review run
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/AIRun" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "429": { $ref: "#/components/responses/RateLimited" }
   /ai/proposals/{proposalId}/decision:
     post:
       tags: [AI]
-      summary: Accept or reject an AI proposal
+      summary: Explicitly apply or reject an AI proposal
       operationId: decideAIProposal
       parameters:
         - name: proposalId
           in: path
           required: true
           schema: { $ref: "#/components/schemas/Uuid" }
-        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -1443,9 +1475,20 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [decision]
+              required: [decision, expectedVersion, clientCommandId]
               properties:
-                decision: { type: string, enum: [ACCEPT, REJECT] }
+                decision: { type: string, enum: [apply, reject] }
+                expectedVersion: { type: integer, minimum: 1 }
+                clientCommandId: { $ref: "#/components/schemas/Uuid" }
+                editedPatch:
+                  {
+                    anyOf:
+                      [
+                        { $ref: "#/components/schemas/GoalProposalPatch" },
+                        { type: "null" },
+                      ],
+                  }
+                note: { type: [string, "null"], maxLength: 500 }
       responses:
         "200":
           description: Proposal decision and resulting resource reference
@@ -1453,13 +1496,11 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [proposalId, status]
+                required: [data]
                 properties:
-                  proposalId: { $ref: "#/components/schemas/Uuid" }
-                  status: { type: string }
-                  resource: { $ref: "#/components/schemas/ResourceReference" }
+                  data: { $ref: "#/components/schemas/AIProposal" }
         "409": { $ref: "#/components/responses/Conflict" }
-        "412": { $ref: "#/components/responses/PreconditionFailed" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
   /exports:
     post:
       tags: [Jobs]
@@ -2788,62 +2829,130 @@ components:
         deepLink: { type: [string, "null"] }
         readAt: { type: [string, "null"], format: date-time }
         createdAt: { type: string, format: date-time }
-    CreateAIRunRequest:
+    AIContextScope:
+      type: string
+      enum: [daily_plan, focus_summary, habit_summary, goal_summary]
+    CoachMessageRequest:
       type: object
       additionalProperties: false
-      required: [kind, input, contextGrantIds]
+      required:
+        [conversationId, clientRequestId, locale, message, contextScopes]
       properties:
-        kind:
+        conversationId: { type: [string, "null"], format: uuid }
+        clientRequestId: { $ref: "#/components/schemas/Uuid" }
+        locale: { type: string, enum: [bn-BD, en] }
+        message: { type: string, minLength: 1, maxLength: 2000 }
+        contextScopes:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/AIContextScope" }
+    DailyReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [clientRequestId, locale, contextScopes, includeGoalProposal]
+      properties:
+        clientRequestId: { $ref: "#/components/schemas/Uuid" }
+        locale: { type: string, enum: [bn-BD, en] }
+        contextScopes:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/AIContextScope" }
+        includeGoalProposal: { type: boolean }
+    GoalProposalPatch:
+      type: object
+      additionalProperties: false
+      required:
+        [title, description, horizon, priority, successMeasure, targetDate]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: [string, "null"], maxLength: 2000 }
+        horizon: { type: string, enum: [month, quarter, year] }
+        priority: { type: integer, minimum: 1, maximum: 3 }
+        successMeasure: { type: [string, "null"], maxLength: 500 }
+        targetDate: { type: [string, "null"], format: date }
+    AIProposal:
+      type: object
+      required:
+        [id, runId, targetType, operation, patch, status, expiresAt, version]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        runId: { $ref: "#/components/schemas/Uuid" }
+        targetType: { type: string, enum: [goal] }
+        operation: { type: string, enum: [create] }
+        patch: { $ref: "#/components/schemas/GoalProposalPatch" }
+        editedPatch:
+          {
+            anyOf:
+              [
+                { $ref: "#/components/schemas/GoalProposalPatch" },
+                { type: "null" },
+              ],
+          }
+        rationale: { type: string }
+        status:
           {
             type: string,
             enum:
               [
-                COACH,
-                MENTOR,
-                DAILY_REVIEW,
-                WEEKLY_REVIEW,
-                MONTHLY_REVIEW,
-                SUGGESTION,
-                SMART_REMINDER,
+                pending,
+                applying,
+                accepted,
+                apply_failed,
+                rejected,
+                expired,
+                superseded,
               ],
           }
-        conversationId: { type: string, format: uuid }
-        input: { type: string, minLength: 1, maxLength: 20000 }
-        contextGrantIds:
-          type: array
-          maxItems: 50
-          uniqueItems: true
-          items: { $ref: "#/components/schemas/Uuid" }
-        responseLocale: { type: string, maxLength: 20 }
+        expiresAt: { type: string, format: date-time }
+        appliedResourceId: { type: [string, "null"], format: uuid }
+        version: { type: integer, minimum: 1 }
     AIRun:
       type: object
       required:
-        [id, kind, status, promptVersion, policyVersion, modelAlias, queuedAt]
+        [
+          id,
+          kind,
+          state,
+          locale,
+          promptVersion,
+          policyVersion,
+          scopes,
+          usage,
+          queuedAt,
+          proposals,
+        ]
       properties:
         id: { $ref: "#/components/schemas/Uuid" }
-        kind: { type: string }
-        status:
+        conversationId: { type: [string, "null"], format: uuid }
+        kind: { type: string, enum: [coach, daily_review] }
+        state:
           {
             type: string,
-            enum: [QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED, EXPIRED],
+            enum: [queued, running, completed, failed, cancelled, expired],
           }
+        locale: { type: string, enum: [bn-BD, en] }
         promptVersion: { type: string }
         policyVersion: { type: string }
-        modelAlias:
-          type: string
-          description: Stable capability alias such as fast_text or deep_review; never a client-selected vendor model ID.
         provider:
-          type: [string, "null"]
-          description: Resolved provider after policy routing; initially GROQ, GEMINI, or DETERMINISTIC.
+          { type: [string, "null"], enum: [groq, gemini, deterministic, null] }
+        model: { type: [string, "null"] }
+        scopes:
+          type: array
+          items: { $ref: "#/components/schemas/AIContextScope" }
         output: { type: [object, "null"] }
         usage:
           type: object
           properties:
-            inputTokens: { type: integer }
-            outputTokens: { type: integer }
-            costMicros: { type: integer }
+            inputTokens: { type: [integer, "null"] }
+            outputTokens: { type: [integer, "null"] }
+        failureCode: { type: [string, "null"] }
         queuedAt: { type: string, format: date-time }
         completedAt: { type: [string, "null"], format: date-time }
+        proposals:
+          type: array
+          items: { $ref: "#/components/schemas/AIProposal" }
     Job:
       type: object
       required: [id, status, createdAt]
@@ -2861,9 +2970,3 @@ components:
         createdAt: { type: string, format: date-time }
         completedAt: { type: [string, "null"], format: date-time }
         failureCode: { type: [string, "null"] }
-    ResourceReference:
-      type: object
-      required: [type, id]
-      properties:
-        type: { type: string }
-        id: { $ref: "#/components/schemas/Uuid" }

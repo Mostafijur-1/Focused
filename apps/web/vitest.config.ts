@@ -39,6 +39,12 @@ export default defineConfig({
         "src/features/habits/transport/habit-schemas.ts",
         "src/features/goals/domain/**/*.ts",
         "src/features/goals/transport/goal-schemas.ts",
+        "src/features/ai/domain/**/*.ts",
+        "src/features/ai/application/ai-rate-limiter.ts",
+        "src/features/ai/infrastructure/providers/provider-error.ts",
+        "src/features/ai/infrastructure/providers/provider-router.ts",
+        "src/features/ai/infrastructure/providers/circuit-breaking-provider.ts",
+        "src/features/ai/transport/ai-schemas.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {

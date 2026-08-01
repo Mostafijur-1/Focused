@@ -28,6 +28,14 @@ const goal = {
 };
 
 test.beforeEach(async ({ page }) => {
+  await page.context().addCookies([
+    {
+      name: "focused_csrf",
+      value: "goals-e2e-csrf",
+      domain: "127.0.0.1",
+      path: "/",
+    },
+  ]);
   await page.route("**/api/v1/auth/refresh", (route) =>
     route.fulfill({
       status: 200,

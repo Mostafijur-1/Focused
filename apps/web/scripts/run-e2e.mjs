@@ -16,6 +16,9 @@ const serverPath = resolve(
   "server.js",
 );
 const playwrightCli = require.resolve("@playwright/test/cli");
+const requestedTests = process.argv
+  .slice(2)
+  .filter((argument) => argument !== "--");
 const childEnvironment = {
   ...process.env,
   HOSTNAME: "127.0.0.1",
@@ -82,11 +85,15 @@ process.once("SIGTERM", handleTermination);
 try {
   await waitForHealth();
 
-  testProcess = spawn(process.execPath, [playwrightCli, "test"], {
-    cwd: appRoot,
-    env: childEnvironment,
-    stdio: "inherit",
-  });
+  testProcess = spawn(
+    process.execPath,
+    [playwrightCli, "test", ...requestedTests],
+    {
+      cwd: appRoot,
+      env: childEnvironment,
+      stdio: "inherit",
+    },
+  );
 
   const [exitCode, signal] = await once(testProcess, "exit");
 

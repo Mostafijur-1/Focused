@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 through 7 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, and authoritative Focus Timer foundations:
+Milestones 1 through 8 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, authoritative Focus Timer, and consent-driven AI Guidance foundations:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -29,8 +29,12 @@ Milestones 1 through 7 establish the production, Authentication, PostgreSQL pers
 - Server-authoritative Deep Work and Pomodoro sessions with pause-aware timing, private presets, interruption capture, offline terminal replay, and transactional events
 - Append-only Life Vision revisions and a capacity-aware Weekly Plan that warns without blocking user agency
 - Responsive native Bangla/English goal and planning workflows with private offline-read fallback and WCAG-oriented states
+- Provider-neutral Groq and Gemini adapters with policy-controlled routing, normalized streaming, structured-output validation, timeouts, fallback, and token accounting
+- Request-scoped AI context grants limited to Daily Plan, Focus, Habit, and Goal summaries; sensitive private modules remain excluded by default
+- Bangla-first AI Coach and AI Daily Review with evidence labels, deterministic non-AI degradation, and user-controlled Goal proposals
+- Explicit, versioned proposal decisions that call the normal Goal use case only after member confirmation
 
-Timer, AI, notifications, analytics, and later FocusOS modules remain forward contracts until their approved milestones.
+Notifications, analytics, and later FocusOS modules remain forward contracts until their approved milestones.
 
 ## Architecture
 
@@ -123,7 +127,7 @@ pnpm --filter @focused/web exec playwright install chromium
 - Human guide: [`api/README.md`](api/README.md)
 - OpenAPI contract: [`api/openapi.yaml`](api/openapi.yaml)
 
-The OpenAPI contract describes Focused endpoints. It is unrelated to OpenAI. AI inference will use policy-controlled Groq and Gemini adapters in Milestone 8.
+The OpenAPI contract describes Focused endpoints. It is unrelated to OpenAI. AI inference uses policy-controlled Groq and Gemini adapters; see [docs/ai-coach.md](docs/ai-coach.md).
 
 ## Testing strategy
 
@@ -191,6 +195,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Habit System Architecture and Operations](docs/habits.md)
 - [Goals, Life Vision, and Weekly Planning](docs/goals.md)
 - [Focus Timer and Pomodoro](docs/focus-timer.md)
+- [AI Coach, Daily Review, and Provider Operations](docs/ai-coach.md)
 
 ## Contribution workflow
 
