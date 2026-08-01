@@ -4,6 +4,7 @@ import {
   ListChecks,
   LayoutDashboard,
   MessagesSquare,
+  ShieldCheck,
   Target,
   TimerReset,
 } from "lucide-react";
@@ -12,25 +13,30 @@ import type { Route } from "next";
 import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
+import {
+  MobileNavigation,
+  type AppNavigationKey,
+} from "@/components/shell/mobile-navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import type { Locale } from "@/i18n/config";
 import { getSiteCopy } from "@/i18n/site-copy";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { key: "dashboard", icon: LayoutDashboard, available: true, mobile: true },
-  { key: "focus", icon: TimerReset, available: true, mobile: true },
-  { key: "coach", icon: MessagesSquare, available: true, mobile: true },
-  { key: "habits", icon: ListChecks, available: true, mobile: true },
-  { key: "goals", icon: Target, available: true, mobile: true },
-  { key: "week", icon: CalendarDays, available: true, mobile: true },
-  { key: "notifications", icon: Bell, available: true, mobile: false },
+  { key: "dashboard", icon: LayoutDashboard, available: true },
+  { key: "focus", icon: TimerReset, available: true },
+  { key: "coach", icon: MessagesSquare, available: true },
+  { key: "habits", icon: ListChecks, available: true },
+  { key: "goals", icon: Target, available: true },
+  { key: "week", icon: CalendarDays, available: true },
+  { key: "notifications", icon: Bell, available: true },
+  { key: "security", icon: ShieldCheck, available: true },
 ] as const;
 
 interface AppShellProps {
   readonly children: ReactNode;
   readonly locale: Locale;
-  readonly active: (typeof navigation)[number]["key"];
+  readonly active: AppNavigationKey;
 }
 
 export function AppShell({ children, locale, active }: AppShellProps) {
@@ -75,37 +81,20 @@ export function AppShell({ children, locale, active }: AppShellProps) {
         {children}
       </main>
 
-      <nav
-        className="focused-glass fixed inset-x-0 bottom-0 z-40 grid min-h-18 grid-cols-6 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
-        aria-label={copy.mobileNavigationLabel}
-      >
-        {navigation
-          .filter((item) => item.mobile)
-          .map((item) => (
-            <NavigationItem
-              key={item.key}
-              active={item.key === active}
-              available={item.available}
-              href={`/${locale}/${item.key}` as Route}
-              icon={item.icon}
-              label={copy[item.key]}
-              comingSoon={copy.comingSoon}
-              mobile
-            />
-          ))}
-      </nav>
-
-      <Link
-        href={`/${locale}/notifications` as Route}
-        className={cn(
-          "focused-glass fixed right-4 bottom-24 z-40 flex size-12 items-center justify-center rounded-full border shadow-lg md:hidden",
-          active === "notifications" && "bg-primary text-primary-foreground",
-        )}
-        aria-label={copy.notifications}
-        aria-current={active === "notifications" ? "page" : undefined}
-      >
-        <Bell className="size-5" aria-hidden="true" />
-      </Link>
+      <MobileNavigation
+        active={active}
+        items={navigation.map((item) => ({
+          key: item.key,
+          href: `/${locale}/${item.key}` as Route,
+          label: copy[item.key],
+        }))}
+        navigationLabel={copy.mobileNavigationLabel}
+        moreLabel={copy.more}
+        allFeaturesLabel={copy.allFeatures}
+        closeLabel={copy.closeMenu}
+        lightThemeLabel={site.lightTheme}
+        darkThemeLabel={site.darkTheme}
+      />
     </div>
   );
 }
@@ -117,7 +106,6 @@ interface NavigationItemProps {
   readonly icon: typeof LayoutDashboard;
   readonly label: string;
   readonly comingSoon: string;
-  readonly mobile?: boolean;
 }
 
 function NavigationItem({
@@ -127,12 +115,9 @@ function NavigationItem({
   icon: Icon,
   label,
   comingSoon,
-  mobile = false,
 }: NavigationItemProps) {
   const className = cn(
-    mobile
-      ? "flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[0.6875rem]"
-      : "flex min-h-11 items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium lg:justify-start",
+    "flex min-h-11 items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium lg:justify-start",
     active
       ? "bg-sidebar-accent text-sidebar-accent-foreground"
       : "text-muted-foreground",
@@ -141,9 +126,7 @@ function NavigationItem({
   const content = (
     <>
       <Icon className="size-5 shrink-0" aria-hidden="true" />
-      <span className={cn("truncate", !mobile && "md:sr-only lg:not-sr-only")}>
-        {label}
-      </span>
+      <span className="truncate md:sr-only lg:not-sr-only">{label}</span>
       {!available && <span className="sr-only">— {comingSoon}</span>}
     </>
   );
@@ -174,6 +157,10 @@ const shellCopy = {
     goals: "লক্ষ্য",
     week: "সপ্তাহ",
     notifications: "Notification",
+    security: "নিরাপত্তা",
+    more: "আরও",
+    allFeatures: "সব feature",
+    closeMenu: "Menu বন্ধ করুন",
     comingSoon: "শিগগিরই আসছে",
   },
   en: {
@@ -187,6 +174,10 @@ const shellCopy = {
     goals: "Goals",
     week: "Week",
     notifications: "Notifications",
+    security: "Security",
+    more: "More",
+    allFeatures: "All features",
+    closeMenu: "Close menu",
     comingSoon: "Coming soon",
   },
 } as const;

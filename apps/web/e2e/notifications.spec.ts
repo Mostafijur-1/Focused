@@ -157,6 +157,40 @@ test("snoozes only the selected occurrence with optimistic concurrency", async (
   expect(Date.parse(String(requestBody?.snoozedUntil))).not.toBeNaN();
 });
 
+test("exposes every implemented workspace from the mobile feature menu", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/en/notifications");
+  await page.getByRole("button", { name: "More", exact: true }).click();
+
+  const dialog = page.getByRole("dialog", { name: "All features" });
+  await expect(dialog).toBeVisible();
+  const destinations = {
+    Dashboard: "/en/dashboard",
+    Focus: "/en/focus",
+    "AI Coach": "/en/coach",
+    Habits: "/en/habits",
+    Goals: "/en/goals",
+    Week: "/en/week",
+    Notifications: "/en/notifications",
+    Security: "/en/security",
+  } as const;
+  for (const [label, href] of Object.entries(destinations)) {
+    await expect(
+      dialog.getByRole("link", { name: label, exact: true }),
+    ).toHaveAttribute("href", href);
+  }
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include("#mobile-feature-menu")
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+});
+
 async function mockOverview(page: Page) {
   await page.route("**/api/v1/notifications/overview", async (route) => {
     await route.fulfill({
