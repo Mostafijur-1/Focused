@@ -7,10 +7,8 @@ import { OAuthService } from "@/features/auth/application/oauth-service";
 import type { OAuthProviderAdapter } from "@/features/auth/application/oauth-ports";
 import type { OAuthProvider } from "@/features/auth/domain/oauth-types";
 import { AesGcmSecretCipher } from "@/features/auth/infrastructure/crypto/aes-gcm-secret-cipher";
-import { ArgonPasswordHasher } from "@/features/auth/infrastructure/crypto/argon-password-hasher";
 import { JoseAccessTokenIssuer } from "@/features/auth/infrastructure/crypto/jose-access-token-issuer";
 import { NodeTokenGenerator } from "@/features/auth/infrastructure/crypto/node-token-generator";
-import { ResendAuthMessageSender } from "@/features/auth/infrastructure/messaging/resend-auth-message-sender";
 import { PrismaAuthRepository } from "@/features/auth/infrastructure/persistence/prisma-auth-repository";
 import { PrismaOAuthRepository } from "@/features/auth/infrastructure/persistence/prisma-oauth-repository";
 import { OAuthHttpProviderAdapter } from "@/features/auth/infrastructure/oauth/oauth-provider-adapter";
@@ -30,8 +28,6 @@ export function getAuthService(): AuthService {
     DATABASE_URL: environment.DATABASE_URL,
     AUTH_JWT_PRIVATE_KEY_BASE64: environment.AUTH_JWT_PRIVATE_KEY_BASE64,
     AUTH_JWT_PUBLIC_KEY_BASE64: environment.AUTH_JWT_PUBLIC_KEY_BASE64,
-    RESEND_API_KEY: environment.RESEND_API_KEY,
-    AUTH_EMAIL_FROM: environment.AUTH_EMAIL_FROM,
   };
   const missing = Object.entries(required)
     .filter(([, value]) => !value)
@@ -59,7 +55,6 @@ export function getAuthService(): AuthService {
     repository: new PrismaAuthRepository(
       getPrismaClient(required.DATABASE_URL!),
     ),
-    passwordHasher: new ArgonPasswordHasher(),
     accessTokens: new JoseAccessTokenIssuer({
       privateKey: decodePem(required.AUTH_JWT_PRIVATE_KEY_BASE64!),
       publicKey: decodePem(required.AUTH_JWT_PUBLIC_KEY_BASE64!),
@@ -68,10 +63,6 @@ export function getAuthService(): AuthService {
       audience: environment.AUTH_JWT_AUDIENCE,
     }),
     tokens,
-    messages: new ResendAuthMessageSender({
-      apiKey: required.RESEND_API_KEY!,
-      from: required.AUTH_EMAIL_FROM!,
-    }),
     rateLimiter,
     clock: new SystemClock(),
     appUrl: environment.NEXT_PUBLIC_APP_URL,

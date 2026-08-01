@@ -248,10 +248,34 @@ describe("AuthService", () => {
       }),
     ).rejects.toMatchObject({ code: "RATE_LIMITED", status: 429 });
   });
+
+  it("fails closed before persistence when password capabilities are absent", async () => {
+    const fixture = createFixture({ passwordEnabled: false });
+
+    await expect(
+      fixture.service.register({
+        email: "person@example.com",
+        password: "correct-password-value",
+        displayName: "Person",
+        locale: "en",
+        timeZone: "UTC",
+        context,
+      }),
+    ).rejects.toMatchObject({
+      code: "DEPENDENCY_UNAVAILABLE",
+      safeMessage: "Password authentication is not available.",
+    });
+    expect(fixture.repository.findUserByEmail).not.toHaveBeenCalled();
+    expect(fixture.repository.createUser).not.toHaveBeenCalled();
+  });
 });
 
 function createFixture(
-  options: { findUser?: AuthUser; rateAllowed?: boolean } = {},
+  options: {
+    findUser?: AuthUser;
+    rateAllowed?: boolean;
+    passwordEnabled?: boolean;
+  } = {},
 ) {
   const messages: AuthMessage[] = [];
   let opaqueSequence = 0;
@@ -305,10 +329,16 @@ function createFixture(
   const clock: Clock = { now: () => new Date(now) };
   const dependencies: AuthServiceDependencies = {
     repository,
-    passwordHasher,
     accessTokens,
     tokens,
-    messages: { send: async (message) => void messages.push(message) },
+    ...(options.passwordEnabled === false
+      ? {}
+      : {
+          passwordHasher,
+          messages: {
+            send: async (message: AuthMessage) => void messages.push(message),
+          },
+        }),
     rateLimiter: {
       check: async () => ({
         allowed: options.rateAllowed ?? true,

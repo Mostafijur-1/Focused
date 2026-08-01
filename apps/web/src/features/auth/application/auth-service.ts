@@ -26,10 +26,10 @@ import type {
 
 export interface AuthServiceDependencies {
   readonly repository: AuthRepository;
-  readonly passwordHasher: PasswordHasher;
+  readonly passwordHasher?: PasswordHasher;
   readonly accessTokens: AccessTokenIssuer;
   readonly tokens: SecureTokenGenerator;
-  readonly messages: AuthMessageSender;
+  readonly messages?: AuthMessageSender;
   readonly rateLimiter: AuthRateLimiter;
   readonly clock: Clock;
   readonly appUrl: string;
@@ -73,6 +73,8 @@ export class AuthService {
   async register(
     input: RegisterInput,
   ): Promise<typeof genericRegistrationResult> {
+    const passwordHasher = this.requirePasswordHasher();
+    const messageSender = this.requireMessageSender();
     const email = normalizeEmail(input.email);
     await this.enforceRateLimit(
       `register:${this.dependencies.tokens.digest(email)}`,
@@ -105,6 +107,7 @@ export class AuthService {
         input.context,
       );
       await this.sendActionMessage(
+        messageSender,
         existingUser,
         rawToken,
         "verify_email",
@@ -115,9 +118,7 @@ export class AuthService {
 
     if (existingUser) return genericRegistrationResult;
 
-    const passwordHash = await this.dependencies.passwordHasher.hash(
-      input.password,
-    );
+    const passwordHash = await passwordHasher.hash(input.password);
     const userId = this.dependencies.tokens.id();
     const created = await this.dependencies.repository.createUser({
       id: userId,
@@ -136,6 +137,7 @@ export class AuthService {
 
     if (created === "created") {
       await this.sendActionMessage(
+        messageSender,
         {
           email,
           displayName: input.displayName.trim(),
@@ -165,6 +167,7 @@ export class AuthService {
   }
 
   async login(input: LoginInput): Promise<IssuedSession> {
+    const passwordHasher = this.requirePasswordHasher();
     const email = normalizeEmail(input.email);
     const rateKey = this.dependencies.tokens.digest(
       `${email}:${input.context.ipPrefix ?? "unknown"}`,
@@ -172,7 +175,7 @@ export class AuthService {
     await this.enforceRateLimit(`login:${rateKey}`, 10, 15 * 60);
 
     const user = await this.dependencies.repository.findUserByEmail(email);
-    const passwordMatches = await this.dependencies.passwordHasher.verify(
+    const passwordMatches = await passwordHasher.verify(
       user?.passwordHash ?? null,
       input.password,
     );
@@ -259,6 +262,7 @@ export class AuthService {
     locale: "bn-BD" | "en",
     context: RequestSecurityContext,
   ): Promise<typeof genericRecoveryResult> {
+    const messageSender = this.requireMessageSender();
     const email = normalizeEmail(emailInput);
     await this.enforceRateLimit(
       `recovery:${this.dependencies.tokens.digest(email)}`,
@@ -279,7 +283,13 @@ export class AuthService {
       addSeconds(now, authPolicy.passwordResetTokenSeconds),
       context,
     );
-    await this.sendActionMessage(user, rawToken, "reset_password", locale);
+    await this.sendActionMessage(
+      messageSender,
+      user,
+      rawToken,
+      "reset_password",
+      locale,
+    );
     return genericRecoveryResult;
   }
 
@@ -288,6 +298,7 @@ export class AuthService {
     password: string,
     context: RequestSecurityContext,
   ): Promise<{ readonly reset: true }> {
+    const passwordHasher = this.requirePasswordHasher();
     const passwordIssues = validatePassword(password);
     if (passwordIssues.length > 0) {
       throw new AppError({
@@ -298,7 +309,7 @@ export class AuthService {
       });
     }
 
-    const passwordHash = await this.dependencies.passwordHasher.hash(password);
+    const passwordHash = await passwordHasher.hash(password);
     const reset = await this.dependencies.repository.resetPassword(
       this.dependencies.tokens.digest(token),
       passwordHash,
@@ -428,6 +439,7 @@ export class AuthService {
   }
 
   private async sendActionMessage(
+    sender: AuthMessageSender,
     user: Pick<AuthUser, "email" | "displayName">,
     token: string,
     kind: "verify_email" | "reset_password",
@@ -436,7 +448,7 @@ export class AuthService {
     const path = kind === "verify_email" ? "verify-email" : "reset-password";
     const url = new URL(`/${locale}/${path}`, this.dependencies.appUrl);
     url.hash = `token=${encodeURIComponent(token)}`;
-    await this.dependencies.messages.send({
+    await sender.send({
       kind,
       recipient: user.email,
       displayName: user.displayName,
@@ -447,6 +459,20 @@ export class AuthService {
           : authPolicy.passwordResetTokenSeconds / 60,
       locale,
     });
+  }
+
+  private requirePasswordHasher(): PasswordHasher {
+    if (this.dependencies.passwordHasher) {
+      return this.dependencies.passwordHasher;
+    }
+    throw passwordAuthenticationUnavailable();
+  }
+
+  private requireMessageSender(): AuthMessageSender {
+    if (this.dependencies.messages) {
+      return this.dependencies.messages;
+    }
+    throw passwordAuthenticationUnavailable();
   }
 
   private async enforceRateLimit(
@@ -494,5 +520,12 @@ function invalidOneTimeTokenError(): AppError {
   return new AppError({
     code: "AUTH_TOKEN_INVALID",
     safeMessage: "This security link is invalid or has expired.",
+  });
+}
+
+function passwordAuthenticationUnavailable(): AppError {
+  return new AppError({
+    code: "DEPENDENCY_UNAVAILABLE",
+    safeMessage: "Password authentication is not available.",
   });
 }

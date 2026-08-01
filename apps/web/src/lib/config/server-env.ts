@@ -21,8 +21,6 @@ const serverEnvironmentSchema = z.object({
   AUTH_JWT_ISSUER: z.url().optional(),
   AUTH_JWT_AUDIENCE: z.string().trim().min(1).max(120).default("focused-api"),
   AUTH_DATA_ENCRYPTION_KEY_BASE64: z.string().min(1).optional(),
-  RESEND_API_KEY: z.string().min(1).optional(),
-  AUTH_EMAIL_FROM: z.string().trim().min(3).max(320).optional(),
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
@@ -71,8 +69,6 @@ export function getServerEnvironment(): ServerEnvironment {
     AUTH_JWT_AUDIENCE: process.env.AUTH_JWT_AUDIENCE,
     AUTH_DATA_ENCRYPTION_KEY_BASE64:
       process.env.AUTH_DATA_ENCRYPTION_KEY_BASE64,
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
