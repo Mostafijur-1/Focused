@@ -1848,41 +1848,223 @@ paths:
                 properties:
                   data: { $ref: "#/components/schemas/Gamification" }
         "409": { $ref: "#/components/responses/Conflict" }
-  /admin/audit:
+  /admin/mfa:
     get:
       tags: [Administration]
-      summary: List authorized privileged audit events
-      operationId: listAuditEvents
+      summary: Read the current operator MFA state
+      operationId: getAdminMfaState
+      responses:
+        "200": { description: Operational MFA state }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/mfa/enrollment:
+    post:
+      tags: [Administration]
+      summary: Begin encrypted operational TOTP enrollment
+      operationId: beginAdminMfaEnrollment
+      responses:
+        "201": { description: One-time authenticator enrollment material }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /admin/mfa/enrollment/verify:
+    post:
+      tags: [Administration]
+      summary: Confirm operational TOTP enrollment
+      operationId: verifyAdminMfaEnrollment
+      requestBody:
+        $ref: "#/components/requestBodies/AdminMfaVerification"
+      responses:
+        "200": { description: MFA enrollment verified }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/mfa/session/verify:
+    post:
+      tags: [Administration]
+      summary: Verify operational MFA for the current session
+      operationId: verifyAdminMfaSession
+      requestBody:
+        $ref: "#/components/requestBodies/AdminMfaVerification"
+      responses:
+        "200": { description: Admin session verified }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/step-up:
+    post:
+      tags: [Administration]
+      summary: Create a five-minute single-use scoped step-up grant
+      operationId: createAdminStepUp
+      responses:
+        "201": { description: Scoped step-up grant }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/cases:
+    get:
+      tags: [Administration]
+      summary: List the operator's bounded operational cases
+      operationId: listAdminCases
+      responses:
+        "200": { description: Bounded operational cases }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Administration]
+      summary: Open a reason-coded operational case
+      operationId: openAdminCase
+      responses:
+        "201": { description: Operational case opened }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /admin/overview:
+    get:
+      tags: [Administration]
+      summary: Read privacy-minimized aggregate operations
+      operationId: getAdminOverview
       parameters:
-        - $ref: "#/components/parameters/PageAfter"
-        - $ref: "#/components/parameters/PageLimit"
-        - name: filter[action]
+        - $ref: "#/components/parameters/AdminCaseId"
+      responses:
+        "200": { description: Safe aggregate account and operations metrics }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/users:
+    get:
+      tags: [Administration]
+      summary: Find minimal account metadata by exact email or user ID
+      operationId: findAdminUserMetadata
+      parameters:
+        - $ref: "#/components/parameters/AdminCaseId"
+        - name: identifier
           in: query
-          schema: { type: string, maxLength: 120 }
+          required: true
+          schema: { type: string, minLength: 3, maxLength: 320 }
+      responses:
+        "200": { description: Masked minimal account metadata or null }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/users/{userId}/status:
+    patch:
+      tags: [Administration]
+      summary: Suspend or restore an account atomically
+      operationId: changeAdminUserStatus
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/AdminStepUp"
       responses:
         "200":
-          description: Authorized audit evidence
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/PageMetaEnvelope"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          type: object
-                          required:
-                            [id, action, actorType, occurredAt, correlationId]
-                          properties:
-                            id: { $ref: "#/components/schemas/Uuid" }
-                            action: { type: string }
-                            actorType: { type: string }
-                            targetType: { type: string }
-                            occurredAt: { type: string, format: date-time }
-                            correlationId: { type: string }
+          {
+            description: Account status changed and sessions revoked when suspended,
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /admin/users/{userId}/sessions/revoke:
+    post:
+      tags: [Administration]
+      summary: Revoke all active account sessions
+      operationId: revokeAdminUserSessions
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/AdminStepUp"
+      responses:
+        "200": { description: Sessions revoked }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/feature-flags:
+    get:
+      tags: [Administration]
+      summary: List governed safe Feature Flag configuration
+      operationId: listAdminFeatureFlags
+      parameters:
+        - $ref: "#/components/parameters/AdminCaseId"
+      responses:
+        "200": { description: Feature Flags without secret values }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/feature-flags/{flagId}:
+    patch:
+      tags: [Administration]
+      summary: Update a governed Feature Flag with optimistic concurrency
+      operationId: updateAdminFeatureFlag
+      parameters:
+        - name: flagId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+        - $ref: "#/components/parameters/AdminStepUp"
+      responses:
+        "200": { description: Feature Flag updated }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /admin/audit-events:
+    get:
+      tags: [Administration]
+      summary: List authorized tamper-evident privileged audit events
+      operationId: listAdminAuditEvents
+      parameters:
+        - $ref: "#/components/parameters/AdminCaseId"
+        - name: cursor
+          in: query
+          schema: { $ref: "#/components/schemas/Uuid" }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200":
+          description: Authorized append-only evidence with hash-chain fields
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/health:
+    get:
+      tags: [Administration]
+      summary: Read secret-free database, delivery, cache, and AI provider health
+      operationId: getAdminHealth
+      parameters:
+        - $ref: "#/components/parameters/AdminCaseId"
+      responses:
+        "200": { description: Safe dependency health }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/jobs/{jobId}/retry:
+    post:
+      tags: [Administration]
+      summary: Retry a bounded recoverable failed job
+      operationId: retryAdminJob
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+        - $ref: "#/components/parameters/AdminStepUp"
+      responses:
+        "200": { description: Job returned to the durable queue }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /admin/jobs:
+    get:
+      tags: [Administration]
+      summary: List redacted active and failed job metadata
+      operationId: listAdminJobs
+      parameters:
+        - $ref: "#/components/parameters/AdminCaseId"
+      responses:
+        "200": { description: Job metadata without payloads or results }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/role-changes:
+    get:
+      tags: [Administration]
+      summary: List bounded role-change approvals
+      operationId: listAdminRoleChanges
+      parameters:
+        - $ref: "#/components/parameters/AdminCaseId"
+      responses:
+        "200": { description: Pending and actor-related approvals }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Administration]
+      summary: Request a delegated operational role change
+      operationId: requestAdminRoleChange
+      parameters:
+        - $ref: "#/components/parameters/AdminStepUp"
+      responses:
+        "201": { description: Role change awaiting another administrator }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/role-changes/{approvalId}/approve:
+    post:
+      tags: [Administration]
+      summary: Approve and atomically execute a role change as a second administrator
+      operationId: approveAdminRoleChange
+      parameters:
+        - name: approvalId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+        - $ref: "#/components/parameters/AdminStepUp"
+      responses:
+        "200":
+          { description: Role change executed and access tokens invalidated }
+        "409": { $ref: "#/components/responses/Conflict" }
 components:
   securitySchemes:
     bearerAuth:
@@ -1950,6 +2132,35 @@ components:
       in: path
       required: true
       schema: { $ref: "#/components/schemas/Uuid" }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/Uuid" }
+    AdminCaseId:
+      name: caseId
+      in: query
+      required: true
+      description: Active reason-bound case opened by the current operator.
+      schema: { $ref: "#/components/schemas/Uuid" }
+    AdminStepUp:
+      name: X-Admin-Step-Up
+      in: header
+      required: true
+      description: Five-minute, single-use grant bound to this action and target.
+      schema: { type: string, minLength: 32, maxLength: 512 }
+  requestBodies:
+    AdminMfaVerification:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [code, expectedVersion]
+            properties:
+              code: { type: string, pattern: "^[0-9]{6}$" }
+              expectedVersion: { type: integer, minimum: 1 }
   responses:
     BadRequest:
       description: The request body is malformed or a one-time security token is invalid

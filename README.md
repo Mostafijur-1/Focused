@@ -203,6 +203,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [AI Coach, Daily Review, and Provider Operations](docs/ai-coach.md)
 - [Notifications, Web Push, and Reminder Operations](docs/notifications.md)
 - [Analytics, Reports, Exports, and Gamification](docs/analytics.md)
+- [Admin operations, RBAC, MFA, audit, and bootstrap](docs/admin-operations.md)
 
 ## Contribution workflow
 

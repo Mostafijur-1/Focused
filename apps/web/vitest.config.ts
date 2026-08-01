@@ -53,6 +53,10 @@ export default defineConfig({
         "src/features/notifications/transport/notification-schemas.ts",
         "src/features/analytics/domain/**/*.ts",
         "src/features/analytics/transport/analytics-schemas.ts",
+        "src/features/admin/domain/**/*.ts",
+        "src/features/admin/application/**/*.ts",
+        "src/features/admin/infrastructure/security/**/*.ts",
+        "src/features/admin/transport/admin-schemas.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {
