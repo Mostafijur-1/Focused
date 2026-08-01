@@ -194,7 +194,7 @@ jobs:
 
       - name: Upload release artifact and smoke evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: focused-${{ inputs.target }}-${{ inputs.release_sha }}
           path: |
