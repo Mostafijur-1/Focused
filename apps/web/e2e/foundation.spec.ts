@@ -48,6 +48,61 @@ test("has no automatically detectable critical accessibility violations", async 
   await expectNoWcagViolations(page);
 });
 
+test("publishes localized SEO and installable PWA metadata", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/bn-BD");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /\/bn-BD$/u,
+  );
+  await expect(page.locator('link[hreflang="en"]')).toHaveAttribute(
+    "href",
+    /\/en$/u,
+  );
+  const structuredData = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ??
+      "{}",
+  ) as Record<string, unknown>;
+  expect(structuredData).toMatchObject({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    inLanguage: "bn-BD",
+  });
+
+  const manifest = await request.get("/manifest.webmanifest");
+  expect(manifest.ok()).toBeTruthy();
+  await expect(manifest.json()).resolves.toMatchObject({
+    start_url: "/bn-BD",
+    scope: "/",
+    display: "standalone",
+    theme_color: "#C40063",
+  });
+});
+
+test("serves the safe public locale fallback while offline", async ({
+  context,
+  page,
+}) => {
+  await page.goto("/en");
+  await page.waitForFunction(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    return registration?.active?.state === "activated";
+  });
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+
+  await context.setOffline(true);
+  try {
+    await page.goto("/en?offline-e2e=1");
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Protect your attention/u }),
+    ).toBeVisible();
+  } finally {
+    await context.setOffline(false);
+  }
+});
+
 test("exposes a no-store health endpoint with correlation", async ({
   request,
 }) => {

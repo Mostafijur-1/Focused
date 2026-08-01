@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/card";
 import { isLocale } from "@/i18n/config";
 import { getSiteCopy } from "@/i18n/site-copy";
+import { getServerEnvironment } from "@/lib/config/server-env";
+import { serializeJsonLd } from "@/lib/seo/json-ld";
 import { cn } from "@/lib/utils";
 
 interface LandingPageProps {
@@ -36,6 +38,18 @@ export default async function LandingPage({ params }: LandingPageProps) {
 
   const copy = getSiteCopy(locale);
   const isBangla = locale === "bn-BD";
+  const appUrl = getServerEnvironment().NEXT_PUBLIC_APP_URL;
+  const structuredData = serializeJsonLd({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Focused",
+    alternateName: "FocusOS",
+    url: `${appUrl}/${locale}`,
+    description: copy.subtitle,
+    applicationCategory: "ProductivityApplication",
+    operatingSystem: "Web",
+    inLanguage: locale,
+  });
 
   const features = [
     { icon: Clock3, title: copy.focusTitle, body: copy.focusBody },
@@ -50,6 +64,10 @@ export default async function LandingPage({ params }: LandingPageProps) {
         isBangla && "focused-bangla-copy",
       )}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: structuredData }}
+      />
       <MarketingHeader locale={locale} copy={copy} />
       <main id="main-content">
         <section className="relative isolate">

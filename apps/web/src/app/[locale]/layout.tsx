@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registrar";
 import { AuthProvider } from "@/features/auth/ui/auth-provider";
 import { getServerEnvironment } from "@/lib/config/server-env";
 import { isLocale, locales } from "@/i18n/config";
@@ -106,6 +107,7 @@ export default async function LocaleLayout({
           <a href="#main-content" className="sr-only-focusable">
             {copy.skipToContent}
           </a>
+          <ServiceWorkerRegistrar />
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
       </body>

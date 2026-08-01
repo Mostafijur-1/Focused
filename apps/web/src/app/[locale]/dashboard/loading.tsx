@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 
-import { DashboardSkeleton } from "@/features/dashboard/ui/dashboard";
+import { DashboardSkeleton } from "@/features/dashboard/ui/dashboard-skeleton";
 import { getDashboardCopy } from "@/features/dashboard/ui/dashboard-copy";
 import { isLocale } from "@/i18n/config";
 

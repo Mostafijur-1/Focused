@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "routeJavaScriptGzipBytes": 184320,
+  "routeStylesheetGzipBytes": 16384,
+  "loadingJavaScriptGzipBytes": 30720,
+  "serviceWorkerBytes": 10240
+}

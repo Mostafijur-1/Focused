@@ -63,6 +63,9 @@ jobs:
       - name: Test deployment controls
         run: pnpm test:deployment
 
+      - name: Test optimization controls
+        run: pnpm test:optimization
+
       - name: Test with coverage
         run: pnpm test:coverage
 
@@ -71,6 +74,9 @@ jobs:
 
       - name: Build production application
         run: pnpm build
+
+      - name: Enforce performance budgets
+        run: pnpm analyze:build
 
       - name: Upload coverage
         if: ${{ !cancelled() }}
@@ -96,6 +102,15 @@ jobs:
         with:
           name: release-evidence
           path: docs/quality/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload optimization evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: optimization-report
+          path: apps/web/.next/optimization-report.json
           if-no-files-found: error
           retention-days: 30
 
