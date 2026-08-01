@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 through 9 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, authoritative Focus Timer, consent-driven AI Guidance, and privacy-preserving Notification foundations:
+Milestones 1 through 11 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, authoritative Focus Timer, consent-driven AI Guidance, privacy-preserving Notifications, Analytics, and governed Admin foundations:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -15,9 +15,8 @@ Milestones 1 through 9 establish the production, Authentication, PostgreSQL pers
 - Versioned `/api/v1/health` Route Handler and OpenAPI 3.1 validation
 - Vitest, Testing Library, Playwright, and automated WCAG checks
 - GitHub Actions, SonarQube, Docker, and Vercel configuration
-- Password registration, native Bangla/English verification and recovery flows
 - EdDSA access tokens, opaque rotating refresh tokens, replay-family revocation, and session controls
-- Google OAuth Authorization Code with server-owned PKCE, alongside email/password Authentication
+- Google-only OAuth Authorization Code Authentication with server-owned PKCE, state, and nonce; no password or email-delivery provider is required
 - PostgreSQL identity migration, Prisma/Neon runtime adapter, RBAC, audit events, CSRF/origin checks, and distributed rate-limit adapter
 - Complete product-data schema with ownership foreign keys, native invariants, partial hot-path indexes, and versioned configuration seed
 - Idempotency, transactional outbox helpers, encrypted webhook inbox, leased background jobs, migration drift checks, and PostgreSQL integration tests
@@ -39,7 +38,7 @@ Milestones 1 through 9 establish the production, Authentication, PostgreSQL pers
 - Versioned Focus and Distraction Analytics projections with deterministic rebuilds, bounded 366-day reads, historical timezone handling, and explicit metric definitions
 - Accessible chart/table parity, privacy-filtered immutable reports, AES-GCM encrypted CSV/JSON exports with checksums and expiry, and optional positive-only XP/levels
 
-Admin and later FocusOS modules remain forward contracts until their approved milestones.
+Later FocusOS modules remain forward contracts until their approved milestones.
 
 ## Architecture
 
@@ -142,7 +141,7 @@ The OpenAPI contract describes Focused endpoints. It is unrelated to OpenAI. AI 
 - End-to-end tests: Bangla/English, responsive workflows, keyboard, theme, accessibility, and API smoke
 - Static quality: strict TypeScript, ESLint architecture rules, Prettier, OpenAPI lint, SonarQube
 
-Tests live under `apps/web/tests` and `apps/web/e2e`. CI uses one Playwright worker for reproducibility.
+Tests live under `apps/web/tests` and `apps/web/e2e`. CI uses one Playwright worker for reproducibility and publishes JUnit, coverage, browser, and [release-evidence](docs/quality/README.md) artifacts.
 
 ## GitHub Actions and SonarQube
 
@@ -204,6 +203,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Notifications, Web Push, and Reminder Operations](docs/notifications.md)
 - [Analytics, Reports, Exports, and Gamification](docs/analytics.md)
 - [Admin operations, RBAC, MFA, audit, and bootstrap](docs/admin-operations.md)
+- [Milestone 12 quality and release evidence](docs/quality/README.md)
 
 ## Contribution workflow
 
