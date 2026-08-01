@@ -126,11 +126,10 @@ export const focusSessionSchema = z
   .strict();
 
 export const focusResponseSchema = z
-  .object({ success: z.literal(true), data: focusSessionSchema })
+  .object({ data: focusSessionSchema })
   .passthrough();
 export const focusOverviewResponseSchema = z
   .object({
-    success: z.literal(true),
     data: z.object({
       active: focusSessionSchema.nullable(),
       recent: z.array(focusSessionSchema),
@@ -141,5 +140,5 @@ export const focusOverviewResponseSchema = z
   })
   .passthrough();
 export const presetResponseSchema = z
-  .object({ success: z.literal(true), data: pomodoroPresetSchema })
+  .object({ data: pomodoroPresetSchema })
   .passthrough();

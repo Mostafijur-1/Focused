@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { defaultPomodoroConfig } from "@/features/focus/domain/focus-policy";
 import {
+  focusOverviewResponseSchema,
+  focusResponseSchema,
   interruptionSchema,
   startFocusSchema,
   terminalFocusSchema,
@@ -47,6 +49,44 @@ describe("Focus Timer transport schemas", () => {
         clientCommandId: crypto.randomUUID(),
         category: "thought",
         note: "Remembered another task",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts the API data envelope without an undocumented success flag", () => {
+    const session = {
+      id: crypto.randomUUID(),
+      goalId: null,
+      goalTitle: null,
+      pomodoroPresetId: null,
+      kind: "deep_work",
+      status: "running",
+      intent: "Ship the timer",
+      plannedSeconds: 3_000,
+      focusedSeconds: 0,
+      pausedSeconds: 0,
+      interruptionCount: 0,
+      timeZone: "Asia/Dhaka",
+      startedAt: "2026-08-01T06:00:00.000Z",
+      completedAt: null,
+      abandonedAt: null,
+      outcome: null,
+      version: 1,
+      activeInterval: null,
+      pomodoroConfig: null,
+      serverNow: "2026-08-01T06:00:00.000Z",
+    } as const;
+
+    expect(focusResponseSchema.safeParse({ data: session }).success).toBe(true);
+    expect(
+      focusOverviewResponseSchema.safeParse({
+        data: {
+          active: null,
+          recent: [],
+          presets: [],
+          goalOptions: [],
+          serverNow: session.serverNow,
+        },
       }).success,
     ).toBe(true);
   });

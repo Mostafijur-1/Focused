@@ -1139,7 +1139,6 @@ function readCache(userId: string): FocusOverview | null {
     ) as { readonly cachedAt?: unknown; readonly data?: unknown } | null;
     if (!stored) return null;
     const parsed = focusOverviewResponseSchema.safeParse({
-      success: true,
       data: stored.data ?? stored,
     });
     if (!parsed.success) return null;

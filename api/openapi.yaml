@@ -475,147 +475,17 @@ paths:
                   revoked: { type: integer, minimum: 0 }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-  /users/me/profile:
-    get:
-      tags: [Profile]
-      summary: Get the current member profile
-      operationId: getMyProfile
-      responses:
-        "200":
-          description: Current member profile
-          headers:
-            ETag: { $ref: "#/components/headers/ETag" }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/UserProfile" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-    patch:
-      tags: [Profile]
-      summary: Update the current member profile
-      operationId: updateMyProfile
-      parameters:
-        - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
-      requestBody:
-        required: true
-        content:
-          application/merge-patch+json:
-            schema: { $ref: "#/components/schemas/UpdateProfileRequest" }
-      responses:
-        "200":
-          description: Updated profile
-          headers:
-            ETag: { $ref: "#/components/headers/ETag" }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/UserProfile" }
-        "412": { $ref: "#/components/responses/PreconditionFailed" }
-        "422": { $ref: "#/components/responses/ValidationProblem" }
-  /daily-plans/{date}:
-    get:
-      tags: [Daily Focus]
-      summary: Get a daily focus plan
-      operationId: getDailyPlan
-      parameters:
-        - $ref: "#/components/parameters/LocalDatePath"
-      responses:
-        "200":
-          description: Daily plan
-          headers:
-            ETag: { $ref: "#/components/headers/ETag" }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/DailyPlan" }
-        "404": { $ref: "#/components/responses/NotFound" }
-    put:
-      tags: [Daily Focus]
-      summary: Create or replace a daily focus plan
-      operationId: putDailyPlan
-      parameters:
-        - $ref: "#/components/parameters/LocalDatePath"
-        - $ref: "#/components/parameters/IfMatchOptional"
-        - $ref: "#/components/parameters/IdempotencyKey"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/PutDailyPlanRequest" }
-      responses:
-        "200":
-          description: Updated daily plan
-          headers:
-            ETag: { $ref: "#/components/headers/ETag" }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/DailyPlan" }
-        "201":
-          description: Created daily plan
-          headers:
-            Location: { schema: { type: string } }
-            ETag: { $ref: "#/components/headers/ETag" }
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/DailyPlan" }
-        "412": { $ref: "#/components/responses/PreconditionFailed" }
-        "422": { $ref: "#/components/responses/ValidationProblem" }
-  /daily-plans/{date}/completion:
-    post:
-      tags: [Daily Focus]
-      summary: Close a daily plan with explicit item decisions
-      operationId: closeDailyPlan
-      parameters:
-        - $ref: "#/components/parameters/LocalDatePath"
-        - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [decisions]
-              properties:
-                decisions:
-                  type: array
-                  maxItems: 100
-                  items:
-                    type: object
-                    required: [itemId, outcome]
-                    properties:
-                      itemId: { $ref: "#/components/schemas/Uuid" }
-                      outcome:
-                        { type: string, enum: [COMPLETED, DEFERRED, CANCELLED] }
-                      reason: { type: string, maxLength: 500 }
-      responses:
-        "200":
-          description: Closed plan
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/DailyPlan" }
-        "412": { $ref: "#/components/responses/PreconditionFailed" }
-        "422": { $ref: "#/components/responses/ValidationProblem" }
   /focus-sessions:
     get:
       tags: [Focus Sessions]
-      summary: List focus sessions
-      operationId: listFocusSessions
-      parameters:
-        - $ref: "#/components/parameters/PageAfter"
-        - $ref: "#/components/parameters/PageLimit"
+      summary: Get the member's Focus Timer overview
+      operationId: getFocusOverview
       responses:
         "200":
-          description: Cursor-paginated focus sessions
+          description: Active session, recent sessions, presets, and goal options
           content:
             application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/PageMetaEnvelope"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusOverviewEnvelope" }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
       tags: [Focus Sessions]
@@ -636,9 +506,25 @@ paths:
             ETag: { $ref: "#/components/headers/ETag" }
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
+  /focus-sessions/{focusSessionId}:
+    get:
+      tags: [Focus Sessions]
+      summary: Get one owned focus session
+      operationId: getFocusSession
+      parameters:
+        - $ref: "#/components/parameters/FocusSessionId"
+      responses:
+        "200":
+          description: Focus Session detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /focus-sessions/{focusSessionId}/pauses:
     post:
       tags: [Focus Sessions]
@@ -662,7 +548,7 @@ paths:
           description: Paused session
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
         "412": { $ref: "#/components/responses/PreconditionFailed" }
   /focus-sessions/{focusSessionId}/resumption:
@@ -682,7 +568,7 @@ paths:
           description: Resumed session
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /focus-sessions/{focusSessionId}/completion:
     post:
@@ -701,7 +587,7 @@ paths:
           description: Completed session
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /focus-sessions/{focusSessionId}/abandonment:
     post:
@@ -720,7 +606,7 @@ paths:
           description: Abandoned session
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /focus-sessions/{focusSessionId}/extension:
     post:
@@ -746,7 +632,7 @@ paths:
           description: Extended session
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /focus-sessions/{focusSessionId}/interruptions:
     post:
@@ -782,7 +668,7 @@ paths:
           description: Interruption recorded
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /focus-sessions/{focusSessionId}/intervals/advance:
     post:
@@ -807,7 +693,7 @@ paths:
           description: Next interval started from an authoritative timestamp
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/FocusSession" }
+              schema: { $ref: "#/components/schemas/FocusSessionEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /pomodoro-presets:
     post:
@@ -824,7 +710,7 @@ paths:
           description: Preset created
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/PomodoroPreset" }
+              schema: { $ref: "#/components/schemas/PomodoroPresetEnvelope" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
   /pomodoro-presets/{presetId}:
     patch:
@@ -852,7 +738,7 @@ paths:
           description: Preset updated
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/PomodoroPreset" }
+              schema: { $ref: "#/components/schemas/PomodoroPresetEnvelope" }
         "409": { $ref: "#/components/responses/Conflict" }
   /goals:
     get:
@@ -1022,6 +908,31 @@ paths:
               },
           }
         "409": { $ref: "#/components/responses/Conflict" }
+  /goals/{goalId}/milestones/{milestoneId}:
+    patch:
+      tags: [Goals]
+      summary: Update an owned goal milestone
+      operationId: updateGoalMilestone
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+        - name: milestoneId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMilestoneRequest" }
+      responses:
+        "200":
+          description: Updated milestone and parent goal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
   /goals/{goalId}/key-results:
     post:
       tags: [Goals]
@@ -1044,6 +955,76 @@ paths:
               },
           }
         "409": { $ref: "#/components/responses/Conflict" }
+  /goals/{goalId}/key-results/{keyResultId}:
+    patch:
+      tags: [Goals]
+      summary: Update an owned goal key result
+      operationId: updateGoalKeyResult
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+        - name: keyResultId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateKeyResultRequest" }
+      responses:
+        "200":
+          description: Updated key result and parent goal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /goals/{goalId}/links:
+    post:
+      tags: [Goals]
+      summary: Link an owned resource to a goal
+      operationId: linkGoalResource
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LinkGoalRequest" }
+      responses:
+        "201":
+          description: Linked resource and parent goal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /goals/{goalId}/links/{linkId}:
+    delete:
+      tags: [Goals]
+      summary: Unlink an owned resource from a goal
+      operationId: unlinkGoalResource
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+        - name: linkId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+        - name: expectedVersion
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Unlinked resource and parent goal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
   /life-vision:
     get:
       tags: [Goals]
@@ -1167,6 +1148,30 @@ paths:
                   },
               },
           }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /weekly-plans/plans/{planId}/transition:
+    post:
+      tags: [Goals]
+      summary: Activate or close an owned weekly plan
+      operationId: transitionWeeklyPlan
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransitionWeeklyPlanRequest" }
+      responses:
+        "200":
+          description: Transitioned weekly plan
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeeklyPlanEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
   /reminders:
@@ -1974,16 +1979,6 @@ components:
       in: header
       required: true
       schema: { type: string, minLength: 16, maxLength: 160 }
-    IfMatch:
-      name: If-Match
-      in: header
-      required: true
-      schema: { type: string }
-    IfMatchOptional:
-      name: If-Match
-      in: header
-      required: false
-      schema: { type: string }
     CsrfToken:
       name: X-CSRF-Token
       in: header
@@ -1999,11 +1994,6 @@ components:
       in: query
       required: false
       schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
-    LocalDatePath:
-      name: date
-      in: path
-      required: true
-      schema: { type: string, format: date }
     FocusSessionId:
       name: focusSessionId
       in: path
@@ -2598,18 +2588,6 @@ components:
               pointer: { type: string }
               code: { type: string }
               message: { type: string }
-    PageMetaEnvelope:
-      type: object
-      required: [data, page]
-      properties:
-        data: { type: array, items: {} }
-        page:
-          type: object
-          required: [hasMore]
-          properties:
-            next: { type: [string, "null"] }
-            hasMore: { type: boolean }
-        asOf: { type: string, format: date-time }
     SessionTokenResponse:
       type: object
       additionalProperties: false
@@ -2644,82 +2622,6 @@ components:
       required: [revoked]
       properties:
         revoked: { type: boolean, const: true }
-    UserProfile:
-      type: object
-      required: [userId, displayName, timeZone, locale, weekStartsOn, version]
-      properties:
-        userId: { $ref: "#/components/schemas/Uuid" }
-        displayName: { type: string, minLength: 1, maxLength: 120 }
-        avatarUrl: { type: [string, "null"], format: uri }
-        timeZone: { type: string, maxLength: 80 }
-        locale: { type: string, maxLength: 20 }
-        weekStartsOn: { type: integer, minimum: 0, maximum: 6 }
-        version: { type: integer, minimum: 1 }
-    UpdateProfileRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        displayName: { type: string, minLength: 1, maxLength: 120 }
-        timeZone: { type: string, maxLength: 80 }
-        locale: { type: string, maxLength: 20 }
-        weekStartsOn: { type: integer, minimum: 0, maximum: 6 }
-    PlanItem:
-      type: object
-      required: [id, title, status, isPrimary, position, version]
-      properties:
-        id: { $ref: "#/components/schemas/Uuid" }
-        goalId: { type: [string, "null"], format: uuid }
-        title: { type: string, maxLength: 240 }
-        status:
-          {
-            type: string,
-            enum: [PLANNED, IN_PROGRESS, COMPLETED, DEFERRED, CANCELLED],
-          }
-        isPrimary: { type: boolean }
-        estimateMinutes: { type: [integer, "null"], minimum: 1, maximum: 1440 }
-        position: { type: integer, minimum: 0 }
-        version: { type: integer, minimum: 1 }
-    DailyPlan:
-      type: object
-      required: [id, date, timeZone, status, items, notDoing, version]
-      properties:
-        id: { $ref: "#/components/schemas/Uuid" }
-        date: { type: string, format: date }
-        timeZone: { type: string }
-        status: { type: string, enum: [DRAFT, ACTIVE, CLOSED, ARCHIVED] }
-        capacityMinutes: { type: [integer, "null"], minimum: 0, maximum: 1440 }
-        items:
-          {
-            type: array,
-            maxItems: 100,
-            items: { $ref: "#/components/schemas/PlanItem" },
-          }
-        notDoing:
-          { type: array, maxItems: 30, items: { type: string, maxLength: 240 } }
-        version: { type: integer, minimum: 1 }
-    PutDailyPlanRequest:
-      type: object
-      additionalProperties: false
-      required: [timeZone, items]
-      properties:
-        timeZone: { type: string, maxLength: 80 }
-        capacityMinutes: { type: integer, minimum: 0, maximum: 1440 }
-        items:
-          type: array
-          maxItems: 100
-          items:
-            type: object
-            required: [clientId, title, isPrimary, position]
-            properties:
-              id: { type: string, format: uuid }
-              clientId: { type: string, maxLength: 100 }
-              goalId: { type: string, format: uuid }
-              title: { type: string, minLength: 1, maxLength: 240 }
-              isPrimary: { type: boolean }
-              estimateMinutes: { type: integer, minimum: 1, maximum: 1440 }
-              position: { type: integer, minimum: 0 }
-        notDoing:
-          { type: array, maxItems: 30, items: { type: string, maxLength: 240 } }
     FocusSession:
       type: object
       required:
@@ -2866,6 +2768,48 @@ components:
             name: { type: string, minLength: 1, maxLength: 80 }
             isDefault: { type: boolean }
             version: { type: integer, minimum: 1 }
+    FocusSessionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/FocusSession" }
+    FocusOverviewEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [active, recent, presets, goalOptions, serverNow]
+          properties:
+            active:
+              oneOf:
+                - type: "null"
+                - $ref: "#/components/schemas/FocusSession"
+            recent:
+              type: array
+              items: { $ref: "#/components/schemas/FocusSession" }
+            presets:
+              type: array
+              items: { $ref: "#/components/schemas/PomodoroPreset" }
+            goalOptions:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [id, title]
+                properties:
+                  id: { $ref: "#/components/schemas/Uuid" }
+                  title: { type: string }
+            serverNow: { type: string, format: date-time }
+    PomodoroPresetEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/PomodoroPreset" }
     CreatePomodoroPresetRequest:
       type: object
       additionalProperties: false
@@ -3069,6 +3013,56 @@ components:
         weight: { type: number, exclusiveMinimum: 0 }
         clientCommandId: { $ref: "#/components/schemas/Uuid" }
         expectedVersion: { type: integer, minimum: 1 }
+    UpdateMilestoneRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [title, dueDate, status, weight, expectedVersion, expectedGoalVersion]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        dueDate: { type: [string, "null"], format: date }
+        status:
+          {
+            type: string,
+            enum: [planned, in_progress, completed, deferred, cancelled],
+          }
+        weight: { type: number, exclusiveMinimum: 0, maximum: 1000 }
+        expectedVersion: { type: integer, minimum: 1 }
+        expectedGoalVersion: { type: integer, minimum: 1 }
+    UpdateKeyResultRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          title,
+          targetValue,
+          currentValue,
+          unit,
+          weight,
+          expectedVersion,
+          expectedGoalVersion,
+        ]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        targetValue: { type: number, exclusiveMinimum: 0 }
+        currentValue: { type: number, minimum: 0 }
+        unit: { type: string, minLength: 1, maxLength: 40 }
+        weight: { type: number, exclusiveMinimum: 0, maximum: 1000 }
+        expectedVersion: { type: integer, minimum: 1 }
+        expectedGoalVersion: { type: integer, minimum: 1 }
+    LinkGoalRequest:
+      type: object
+      additionalProperties: false
+      required: [type, resourceId, label, expectedVersion]
+      properties:
+        type:
+          {
+            type: string,
+            enum: [vision_area, plan_item, habit, learning_item, focus_session],
+          }
+        resourceId: { $ref: "#/components/schemas/Uuid" }
+        label: { type: [string, "null"], maxLength: 160 }
+        expectedVersion: { type: integer, minimum: 1 }
     SaveLifeVisionRequest:
       type: object
       additionalProperties: false
@@ -3113,6 +3107,13 @@ components:
       type: object
       required: [data]
       properties: { data: { type: [object, "null"] } }
+    TransitionWeeklyPlanRequest:
+      type: object
+      additionalProperties: false
+      required: [toStatus, expectedVersion]
+      properties:
+        toStatus: { type: string, enum: [active, closed] }
+        expectedVersion: { type: integer, minimum: 1 }
     Reminder:
       type: object
       required:
