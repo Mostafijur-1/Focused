@@ -1,11 +1,6 @@
 import { createHash } from "node:crypto";
 
-import {
-  createRemoteJWKSet,
-  decodeJwt,
-  jwtVerify,
-  type JWTPayload,
-} from "jose";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { z } from "zod";
 
 import type {
@@ -38,20 +33,6 @@ const tokenResponseSchema = z.object({
   access_token: z.string().min(1),
   id_token: z.string().min(1).optional(),
 });
-
-const githubUserSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string().nullable(),
-  login: z.string(),
-});
-
-const githubEmailsSchema = z.array(
-  z.object({
-    email: z.string(),
-    primary: z.boolean(),
-    verified: z.boolean(),
-  }),
-);
 
 export class OAuthHttpProviderAdapter implements OAuthProviderAdapter {
   readonly provider: OAuthProvider;
@@ -101,9 +82,7 @@ export class OAuthHttpProviderAdapter implements OAuthProviderAdapter {
       const parsed = tokenResponseSchema.safeParse(await response.json());
       if (!parsed.success) throw providerUnavailable();
 
-      return this.provider === "github"
-        ? await this.githubIdentity(parsed.data.access_token)
-        : await this.oidcIdentity(parsed.data.id_token, input.nonce);
+      return await this.oidcIdentity(parsed.data.id_token, input.nonce);
     } catch (cause) {
       if (cause instanceof AppError) throw cause;
       throw providerUnavailable(cause);
@@ -116,29 +95,26 @@ export class OAuthHttpProviderAdapter implements OAuthProviderAdapter {
   ): Promise<OAuthIdentity> {
     if (!idToken || !expectedNonce || !this.options.jwksUri)
       throw providerUnavailable();
-    const unverified = decodeJwt(idToken);
-    const issuer = this.resolveIssuer(unverified);
+    if (!this.options.issuer) throw providerUnavailable();
     const result = await jwtVerify(
       idToken,
       (this.remoteJwks ??= createRemoteJWKSet(new URL(this.options.jwksUri))),
       {
         algorithms: ["RS256"],
-        issuer,
+        issuer: this.options.issuer,
         audience: this.options.clientId,
         clockTolerance: 30,
       },
     );
     if (result.payload.nonce !== expectedNonce) throw providerUnavailable();
-    if (this.provider === "google" && result.payload.email_verified !== true) {
+    if (result.payload.email_verified !== true) {
       throw new AppError({
         code: "FORBIDDEN",
         safeMessage: "A verified email is required from this provider.",
       });
     }
     const subject = stringClaim(result.payload.sub);
-    const email = stringClaim(
-      result.payload.email ?? result.payload.preferred_username,
-    );
+    const email = stringClaim(result.payload.email);
     if (!isPlausibleEmail(email)) {
       throw new AppError({
         code: "FORBIDDEN",
@@ -151,53 +127,6 @@ export class OAuthHttpProviderAdapter implements OAuthProviderAdapter {
       subject,
       email: normalizeEmail(email),
       displayName: name.slice(0, 120),
-    };
-  }
-
-  private resolveIssuer(payload: JWTPayload): string {
-    if (this.provider !== "microsoft") {
-      if (!this.options.issuer) throw providerUnavailable();
-      return this.options.issuer;
-    }
-    const tenantId = stringClaim(payload.tid);
-    return `https://login.microsoftonline.com/${tenantId}/v2.0`;
-  }
-
-  private async githubIdentity(accessToken: string): Promise<OAuthIdentity> {
-    const headers = {
-      accept: "application/vnd.github+json",
-      authorization: `Bearer ${accessToken}`,
-      "x-github-api-version": "2022-11-28",
-    };
-    const [userResponse, emailResponse] = await Promise.all([
-      fetch("https://api.github.com/user", {
-        headers,
-        cache: "no-store",
-        signal: AbortSignal.timeout(8_000),
-      }),
-      fetch("https://api.github.com/user/emails", {
-        headers,
-        cache: "no-store",
-        signal: AbortSignal.timeout(8_000),
-      }),
-    ]);
-    if (!userResponse.ok || !emailResponse.ok) throw providerUnavailable();
-    const user = githubUserSchema.parse(await userResponse.json());
-    const emails = githubEmailsSchema.parse(await emailResponse.json());
-    const email = emails.find(
-      (candidate) => candidate.primary && candidate.verified,
-    );
-    if (!email) {
-      throw new AppError({
-        code: "FORBIDDEN",
-        safeMessage: "A verified primary email is required from this provider.",
-      });
-    }
-    return {
-      provider: "github",
-      subject: String(user.id),
-      email: normalizeEmail(email.email),
-      displayName: (user.name ?? user.login).slice(0, 120),
     };
   }
 }

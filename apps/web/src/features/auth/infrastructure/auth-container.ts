@@ -99,18 +99,6 @@ export function getOAuthService(): OAuthService {
     environment.GOOGLE_OAUTH_CLIENT_ID,
     environment.GOOGLE_OAUTH_CLIENT_SECRET,
   );
-  addProvider(
-    providers,
-    "github",
-    environment.GITHUB_OAUTH_CLIENT_ID,
-    environment.GITHUB_OAUTH_CLIENT_SECRET,
-  );
-  addProvider(
-    providers,
-    "microsoft",
-    environment.MICROSOFT_OAUTH_CLIENT_ID,
-    environment.MICROSOFT_OAUTH_CLIENT_SECRET,
-  );
   const tokens = new NodeTokenGenerator();
   oauthService = new OAuthService({
     repository: new PrismaOAuthRepository(
@@ -144,7 +132,7 @@ function addProvider(
   clientSecret: string | undefined,
 ): void {
   if (!clientId || !clientSecret) return;
-  const configuration = providerConfiguration(provider);
+  const configuration = providerConfiguration();
   providers.set(
     provider,
     new OAuthHttpProviderAdapter({
@@ -156,29 +144,12 @@ function addProvider(
   );
 }
 
-function providerConfiguration(provider: OAuthProvider) {
-  if (provider === "google") {
-    return {
-      authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-      tokenEndpoint: "https://oauth2.googleapis.com/token",
-      scopes: ["openid", "email", "profile"],
-      issuer: "https://accounts.google.com",
-      jwksUri: "https://www.googleapis.com/oauth2/v3/certs",
-    } as const;
-  }
-  if (provider === "microsoft") {
-    return {
-      authorizationEndpoint:
-        "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
-      tokenEndpoint:
-        "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-      scopes: ["openid", "email", "profile"],
-      jwksUri: "https://login.microsoftonline.com/common/discovery/v2.0/keys",
-    } as const;
-  }
+function providerConfiguration() {
   return {
-    authorizationEndpoint: "https://github.com/login/oauth/authorize",
-    tokenEndpoint: "https://github.com/login/oauth/access_token",
-    scopes: ["read:user", "user:email"],
+    authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+    tokenEndpoint: "https://oauth2.googleapis.com/token",
+    scopes: ["openid", "email", "profile"],
+    issuer: "https://accounts.google.com",
+    jwksUri: "https://www.googleapis.com/oauth2/v3/certs",
   } as const;
 }

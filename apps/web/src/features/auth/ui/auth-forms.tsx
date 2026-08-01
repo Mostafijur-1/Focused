@@ -463,17 +463,14 @@ function OAuthButtons({ locale }: { readonly locale: Locale }) {
   }
   return (
     <div className="space-y-2">
-      {(["google", "github", "microsoft"] as const).map((provider) => (
-        <Button
-          key={provider}
-          variant="outline"
-          className="w-full"
-          disabled={pending !== null}
-          onClick={() => void start(provider)}
-        >
-          {pending === provider ? copy.signingIn : copy[provider]}
-        </Button>
-      ))}
+      <Button
+        variant="outline"
+        className="w-full"
+        disabled={pending !== null}
+        onClick={() => void start("google")}
+      >
+        {pending === "google" ? copy.signingIn : copy.google}
+      </Button>
       <FormStatus message={error} />
     </div>
   );

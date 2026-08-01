@@ -1,4 +1,4 @@
-export const oauthProviders = ["google", "github", "microsoft"] as const;
+export const oauthProviders = ["google"] as const;
 export type OAuthProvider = (typeof oauthProviders)[number];
 
 export interface OAuthIdentity {

@@ -37,8 +37,6 @@ const copy = {
     genericRecovery:
       "অনুরোধ গ্রহণ করা হয়েছে। Accountটি উপযুক্ত হলে নিরাপদ নির্দেশনা পৌঁছে যাবে।",
     google: "Google দিয়ে চালিয়ে যান",
-    github: "GitHub দিয়ে চালিয়ে যান",
-    microsoft: "Microsoft দিয়ে চালিয়ে যান",
     or: "অথবা",
     securityNote:
       "আপনার refresh token browser-এর নিরাপদ HttpOnly cookie-তে থাকে; Password বা token কখনও log করা হয় না।",
@@ -92,8 +90,6 @@ const copy = {
     genericRecovery:
       "Request accepted. Secure instructions will arrive if the account is eligible.",
     google: "Continue with Google",
-    github: "Continue with GitHub",
-    microsoft: "Continue with Microsoft",
     or: "or",
     securityNote:
       "Your refresh token stays in a secure HttpOnly cookie; passwords and tokens are never logged.",

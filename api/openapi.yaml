@@ -461,7 +461,7 @@ paths:
         - name: provider
           in: path
           required: true
-          schema: { type: string, enum: [google, github, microsoft] }
+          schema: { type: string, enum: [google] }
       requestBody:
         required: true
         content:
@@ -506,7 +506,7 @@ paths:
         - name: provider
           in: path
           required: true
-          schema: { type: string, enum: [google, github, microsoft] }
+          schema: { type: string, enum: [google] }
         - name: code
           in: query
           required: true
