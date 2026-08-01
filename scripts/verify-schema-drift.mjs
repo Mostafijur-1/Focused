@@ -79,6 +79,12 @@ const nativeObjectNames = new Set([
   "habit_pauses_one_active_idx",
   "habit_occurrences_version_check",
   "habit_entry_revisions_revision_check",
+  "goals_policy_check",
+  "milestones_policy_check",
+  "goal_key_results_policy_check",
+  "goal_check_ins_policy_check",
+  "life_visions_policy_check",
+  "plans_milestone6_policy_check",
 ]);
 
 const unexpected = statements.filter((statement) => {

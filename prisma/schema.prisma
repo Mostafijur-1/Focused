@@ -65,6 +65,26 @@ enum GoalStatus {
   ARCHIVED
 }
 
+enum GoalProgressMode {
+  MANUAL
+  MILESTONES
+  KEY_RESULTS
+}
+
+enum GoalLinkType {
+  VISION_AREA
+  PLAN_ITEM
+  HABIT
+  LEARNING_ITEM
+  FOCUS_SESSION
+}
+
+enum LifeVisionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum FocusKind {
   DEEP_WORK
   POMODORO
@@ -522,65 +542,158 @@ model PushSubscription {
 }
 
 model Goal {
-  id             String         @id @default(uuid()) @db.Uuid
-  userId         String         @db.Uuid
-  parentGoalId   String?        @db.Uuid
-  title          String         @db.VarChar(200)
-  description    String?        @db.Text
-  status         GoalStatus     @default(DRAFT)
-  horizon        String         @db.VarChar(30)
-  successMeasure String?        @db.Text
-  targetValue    Decimal?       @db.Decimal(18, 4)
-  targetUnit     String?        @db.VarChar(40)
-  targetDate     DateTime?      @db.Date
-  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
-  deletedAt      DateTime?      @db.Timestamptz(6)
-  version        Int            @default(1)
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent         Goal?          @relation("GoalTree", fields: [parentGoalId], references: [id], onDelete: SetNull)
-  children       Goal[]         @relation("GoalTree")
-  milestones     Milestone[]
-  planItems      PlanItem[]
-  focusSessions  FocusSession[]
+  id                 String                 @id @default(uuid()) @db.Uuid
+  userId             String                 @db.Uuid
+  parentGoalId       String?                @db.Uuid
+  title              String                 @db.VarChar(200)
+  description        String?                @db.Text
+  status             GoalStatus             @default(DRAFT)
+  horizon            String                 @db.VarChar(30)
+  priority           Int                    @default(2) @db.SmallInt
+  position           Int                    @default(0)
+  progressMode       GoalProgressMode       @default(MANUAL)
+  manualProgress     Decimal                @default(0) @db.Decimal(5, 2)
+  successMeasure     String?                @db.Text
+  targetValue        Decimal?               @db.Decimal(18, 4)
+  targetUnit         String?                @db.VarChar(40)
+  targetDate         DateTime?              @db.Date
+  createdByCommandId String?                @db.Uuid
+  achievedAt         DateTime?              @db.Timestamptz(6)
+  abandonedAt        DateTime?              @db.Timestamptz(6)
+  archivedAt         DateTime?              @db.Timestamptz(6)
+  createdAt          DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(6)
+  deletedAt          DateTime?              @db.Timestamptz(6)
+  version            Int                    @default(1)
+  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent             Goal?                  @relation("GoalTree", fields: [parentGoalId], references: [id], onDelete: SetNull)
+  children           Goal[]                 @relation("GoalTree")
+  milestones         Milestone[]
+  keyResults         GoalKeyResult[]
+  checkIns           GoalCheckIn[]
+  links              GoalLink[]
+  transitions        GoalStatusTransition[]
+  planItems          PlanItem[]
+  focusSessions      FocusSession[]
 
+  @@unique([userId, createdByCommandId])
   @@index([userId, status, targetDate])
+  @@index([userId, archivedAt, priority, position])
   @@index([parentGoalId])
   @@map("goals")
 }
 
 model Milestone {
-  id          String     @id @default(uuid()) @db.Uuid
-  goalId      String     @db.Uuid
-  title       String     @db.VarChar(200)
-  dueDate     DateTime?  @db.Date
-  status      ItemStatus @default(PLANNED)
-  position    Int
-  completedAt DateTime?  @db.Timestamptz(6)
-  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
-  version     Int        @default(1)
-  goal        Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  id              String     @id @default(uuid()) @db.Uuid
+  goalId          String     @db.Uuid
+  title           String     @db.VarChar(200)
+  dueDate         DateTime?  @db.Date
+  status          ItemStatus @default(PLANNED)
+  weight          Decimal    @default(1) @db.Decimal(8, 4)
+  clientCommandId String?    @db.Uuid
+  position        Int
+  completedAt     DateTime?  @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @db.Timestamptz(6)
+  version         Int        @default(1)
+  goal            Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@unique([goalId, position])
+  @@unique([goalId, clientCommandId])
   @@index([goalId, status])
   @@map("milestones")
 }
 
+model GoalKeyResult {
+  id              String   @id @default(uuid()) @db.Uuid
+  goalId          String   @db.Uuid
+  title           String   @db.VarChar(200)
+  targetValue     Decimal  @db.Decimal(18, 4)
+  currentValue    Decimal  @default(0) @db.Decimal(18, 4)
+  unit            String   @db.VarChar(40)
+  weight          Decimal  @default(1) @db.Decimal(8, 4)
+  position        Int
+  clientCommandId String   @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  version         Int      @default(1)
+  goal            Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, position])
+  @@unique([goalId, clientCommandId])
+  @@index([goalId])
+  @@map("goal_key_results")
+}
+
+model GoalCheckIn {
+  id              String      @id @default(uuid()) @db.Uuid
+  goalId          String      @db.Uuid
+  clientCommandId String      @db.Uuid
+  progress        Decimal     @db.Decimal(5, 2)
+  value           Decimal?    @db.Decimal(18, 4)
+  note            String?     @db.VarChar(1000)
+  evidenceRef     String?     @db.Uuid
+  source          EntrySource @default(MANUAL)
+  recordedAt      DateTime    @db.Timestamptz(6)
+  targetSnapshot  Json
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+  goal            Goal        @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, clientCommandId])
+  @@index([goalId, recordedAt(sort: Desc), id(sort: Desc)])
+  @@map("goal_check_ins")
+}
+
+model GoalLink {
+  id         String       @id @default(uuid()) @db.Uuid
+  goalId     String       @db.Uuid
+  type       GoalLinkType
+  resourceId String       @db.Uuid
+  label      String?      @db.VarChar(160)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(6)
+  goal       Goal         @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, type, resourceId])
+  @@index([type, resourceId])
+  @@map("goal_links")
+}
+
+model GoalStatusTransition {
+  id              String      @id @default(uuid()) @db.Uuid
+  goalId          String      @db.Uuid
+  fromStatus      GoalStatus?
+  toStatus        GoalStatus
+  reason          String?     @db.VarChar(500)
+  clientCommandId String      @db.Uuid
+  occurredAt      DateTime    @db.Timestamptz(6)
+  goal            Goal        @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, clientCommandId])
+  @@index([goalId, occurredAt(sort: Desc)])
+  @@map("goal_status_transitions")
+}
+
 model LifeVision {
-  id         String           @id @default(uuid()) @db.Uuid
-  userId     String           @db.Uuid
-  revision   Int              @default(1)
-  narrative  String?          @db.Text
-  values     Json             @default("[]")
-  antiGoals  Json             @default("[]")
-  createdAt  DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt  DateTime         @updatedAt @db.Timestamptz(6)
-  archivedAt DateTime?        @db.Timestamptz(6)
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  areas      LifeVisionArea[]
+  id                   String           @id @default(uuid()) @db.Uuid
+  userId               String           @db.Uuid
+  revision             Int              @default(1)
+  status               LifeVisionStatus @default(DRAFT)
+  narrative            String?          @db.Text
+  values               Json             @default("[]")
+  antiGoals            Json             @default("[]")
+  clientCommandId      String?          @db.Uuid
+  publishedByCommandId String?          @db.Uuid
+  publishedAt          DateTime?        @db.Timestamptz(6)
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(6)
+  archivedAt           DateTime?        @db.Timestamptz(6)
+  version              Int              @default(1)
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  areas                LifeVisionArea[]
 
   @@unique([userId, revision])
+  @@unique([userId, clientCommandId])
+  @@unique([userId, publishedByCommandId])
   @@index([userId, archivedAt])
   @@map("life_visions")
 }
@@ -600,25 +713,30 @@ model LifeVisionArea {
 }
 
 model Plan {
-  id              String     @id @default(uuid()) @db.Uuid
-  userId          String     @db.Uuid
-  type            PlanType
-  periodStart     DateTime   @db.Date
-  periodEnd       DateTime   @db.Date
-  timeZone        String     @db.VarChar(80)
-  title           String?    @db.VarChar(200)
-  theme           String?    @db.VarChar(160)
-  status          PlanStatus @default(DRAFT)
-  capacityMinutes Int?
-  notDoing        Json       @default("[]")
-  closedAt        DateTime?  @db.Timestamptz(6)
-  createdAt       DateTime   @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime   @updatedAt @db.Timestamptz(6)
-  version         Int        @default(1)
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           PlanItem[]
+  id               String     @id @default(uuid()) @db.Uuid
+  userId           String     @db.Uuid
+  type             PlanType
+  periodStart      DateTime   @db.Date
+  periodEnd        DateTime   @db.Date
+  timeZone         String     @db.VarChar(80)
+  title            String?    @db.VarChar(200)
+  theme            String?    @db.VarChar(160)
+  status           PlanStatus @default(DRAFT)
+  capacityMinutes  Int?
+  notDoing         Json       @default("[]")
+  fixedCommitments Json       @default("[]")
+  reflection       String?    @db.VarChar(2000)
+  clientCommandId  String?    @db.Uuid
+  finalizedAt      DateTime?  @db.Timestamptz(6)
+  closedAt         DateTime?  @db.Timestamptz(6)
+  createdAt        DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime   @updatedAt @db.Timestamptz(6)
+  version          Int        @default(1)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items            PlanItem[]
 
   @@unique([userId, type, periodStart])
+  @@unique([userId, type, clientCommandId])
   @@index([userId, type, status, periodStart])
   @@map("plans")
 }
