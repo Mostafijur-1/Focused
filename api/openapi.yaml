@@ -812,31 +812,31 @@ paths:
       summary: List goals
       operationId: listGoals
       parameters:
-        - $ref: "#/components/parameters/PageAfter"
-        - $ref: "#/components/parameters/PageLimit"
-        - name: filter[status]
+        - name: cursor
           in: query
-          schema: { type: string }
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/PageLimit"
+        - name: status
+          in: query
+          schema:
+            {
+              type: string,
+              enum: [draft, active, paused, achieved, abandoned, archived],
+            }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 200 }
       responses:
         "200":
           description: Goal collection
           content:
             application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/PageMetaEnvelope"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Goal" }
+              schema: { $ref: "#/components/schemas/GoalListEnvelope" }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
       tags: [Goals]
       summary: Create a goal
       operationId: createGoal
-      parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -847,7 +847,7 @@ paths:
           description: Created goal
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Goal" }
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
   /goals/{goalId}:
     get:
@@ -863,7 +863,7 @@ paths:
             ETag: { $ref: "#/components/headers/ETag" }
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Goal" }
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
         "404": { $ref: "#/components/responses/NotFound" }
     patch:
       tags: [Goals]
@@ -871,20 +871,256 @@ paths:
       operationId: updateGoal
       parameters:
         - $ref: "#/components/parameters/GoalId"
-        - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
-          application/merge-patch+json:
-            schema: { $ref: "#/components/schemas/CreateGoalRequest" }
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateGoalRequest" }
       responses:
         "200":
           description: Updated goal
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Goal" }
-        "412": { $ref: "#/components/responses/PreconditionFailed" }
+              schema: { $ref: "#/components/schemas/GoalEnvelope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /goals/{goalId}/transition:
+    post:
+      tags: [Goals]
+      summary: Transition a goal through its explicit state machine
+      operationId: transitionGoal
+      parameters: [{ $ref: "#/components/parameters/GoalId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [toStatus, clientCommandId, expectedVersion]
+              properties:
+                toStatus:
+                  {
+                    type: string,
+                    enum:
+                      [draft, active, paused, achieved, abandoned, archived],
+                  }
+                reason: { type: [string, "null"], maxLength: 500 }
+                confirmCompletion: { type: boolean, default: false }
+                clientCommandId: { $ref: "#/components/schemas/Uuid" }
+                expectedVersion: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          {
+            description: Transitioned goal,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/GoalEnvelope" } },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /goals/{goalId}/check-ins:
+    post:
+      tags: [Goals]
+      summary: Append a goal progress check-in
+      operationId: checkInGoal
+      parameters: [{ $ref: "#/components/parameters/GoalId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [clientCommandId, expectedVersion]
+              properties:
+                progress: { type: [number, "null"], minimum: 0, maximum: 100 }
+                value: { type: [number, "null"], minimum: 0 }
+                note: { type: [string, "null"], maxLength: 1000 }
+                evidenceRef: { type: [string, "null"], format: uuid }
+                clientCommandId: { $ref: "#/components/schemas/Uuid" }
+                expectedVersion: { type: integer, minimum: 1 }
+      responses:
+        "201":
+          {
+            description: Recorded check-in,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/GoalEnvelope" } },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /goals/{goalId}/milestones:
+    post:
+      tags: [Goals]
+      summary: Add a weighted milestone
+      operationId: addGoalMilestone
+      parameters: [{ $ref: "#/components/parameters/GoalId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMilestoneRequest" }
+      responses:
+        "201":
+          {
+            description: Milestone added,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/GoalEnvelope" } },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /goals/{goalId}/key-results:
+    post:
+      tags: [Goals]
+      summary: Add a weighted key result
+      operationId: addGoalKeyResult
+      parameters: [{ $ref: "#/components/parameters/GoalId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateKeyResultRequest" }
+      responses:
+        "201":
+          {
+            description: Key result added,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/GoalEnvelope" } },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /life-vision:
+    get:
+      tags: [Goals]
+      summary: Read the current private Life Vision revision
+      operationId: getLifeVision
+      responses:
+        "200":
+          {
+            description: Current revision or null,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/LifeVisionEnvelope" },
+                  },
+              },
+          }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [Goals]
+      summary: Save an append-only Life Vision draft revision
+      operationId: saveLifeVision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveLifeVisionRequest" }
+      responses:
+        "200":
+          {
+            description: Saved revision,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/LifeVisionEnvelope" },
+                  },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /life-vision/{visionId}/publish:
+    post:
+      tags: [Goals]
+      summary: Publish a private Life Vision revision
+      operationId: publishLifeVision
+      parameters:
+        - name: visionId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, clientCommandId]
+              properties:
+                expectedVersion: { type: integer, minimum: 1 }
+                clientCommandId: { $ref: "#/components/schemas/Uuid" }
+      responses:
+        "200":
+          {
+            description: Published revision,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/LifeVisionEnvelope" },
+                  },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /weekly-plans/{weekStart}:
+    get:
+      tags: [Goals]
+      summary: Read the canonical owner-local weekly plan
+      operationId: getWeeklyPlan
+      parameters:
+        - name: weekStart
+          in: path
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          {
+            description: Weekly plan or null,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/WeeklyPlanEnvelope" },
+                  },
+              },
+          }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [Goals]
+      summary: Create or update a weekly plan draft
+      operationId: saveWeeklyPlan
+      parameters:
+        - name: weekStart
+          in: path
+          required: true
+          schema: { type: string, format: date }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveWeeklyPlanRequest" }
+      responses:
+        "200":
+          {
+            description: Saved plan,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/WeeklyPlanEnvelope" },
+                  },
+              },
+          }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
   /reminders:
     get:
       tags: [Reminders]
@@ -1979,23 +2215,83 @@ components:
         plannedSeconds: { type: integer, minimum: 60, maximum: 43200 }
     Goal:
       type: object
-      required: [id, title, status, horizon, version, createdAt, updatedAt]
+      additionalProperties: false
+      required:
+        [
+          id,
+          parentGoalId,
+          title,
+          description,
+          status,
+          horizon,
+          priority,
+          position,
+          progressMode,
+          progress,
+          successMeasure,
+          targetValue,
+          targetUnit,
+          targetDate,
+          overdue,
+          archived,
+          version,
+          createdAt,
+          updatedAt,
+          milestones,
+          keyResults,
+          links,
+          recentCheckIns,
+        ]
       properties:
         id: { $ref: "#/components/schemas/Uuid" }
         parentGoalId: { type: [string, "null"], format: uuid }
         title: { type: string }
         description: { type: [string, "null"] }
-        status: { type: string }
+        status:
+          {
+            type: string,
+            enum: [draft, active, paused, achieved, abandoned, archived],
+          }
         horizon: { type: string }
+        priority: { type: integer, minimum: 1, maximum: 3 }
+        position: { type: integer, minimum: 0 }
+        progressMode: { type: string, enum: [manual, milestones, key_results] }
+        progress: { type: number, minimum: 0, maximum: 100 }
         successMeasure: { type: [string, "null"] }
+        targetValue: { type: [number, "null"] }
+        targetUnit: { type: [string, "null"], maxLength: 40 }
         targetDate: { type: [string, "null"], format: date }
+        overdue: { type: boolean }
+        archived: { type: boolean }
         version: { type: integer, minimum: 1 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        milestones:
+          {
+            type: array,
+            maxItems: 50,
+            items: { $ref: "#/components/schemas/GoalMilestone" },
+          }
+        keyResults:
+          {
+            type: array,
+            maxItems: 20,
+            items: { $ref: "#/components/schemas/GoalKeyResult" },
+          }
+        links: { type: array, maxItems: 50, items: { type: object } }
+        recentCheckIns: { type: array, maxItems: 10, items: { type: object } }
     CreateGoalRequest:
       type: object
       additionalProperties: false
-      required: [title, horizon]
+      required:
+        [
+          title,
+          horizon,
+          priority,
+          progressMode,
+          manualProgress,
+          clientCommandId,
+        ]
       properties:
         parentGoalId: { type: string, format: uuid }
         title: { type: string, minLength: 1, maxLength: 200 }
@@ -2005,6 +2301,156 @@ components:
         targetValue: { type: number }
         targetUnit: { type: string, maxLength: 40 }
         targetDate: { type: string, format: date }
+        priority: { type: integer, minimum: 1, maximum: 3 }
+        progressMode: { type: string, enum: [manual, milestones, key_results] }
+        manualProgress: { type: number, minimum: 0, maximum: 100 }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+    GoalEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties: { data: { $ref: "#/components/schemas/Goal" } }
+    GoalListEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [data, nextCursor, total]
+          properties:
+            data: { type: array, items: { $ref: "#/components/schemas/Goal" } }
+            nextCursor: { type: [string, "null"], format: uuid }
+            total: { type: integer, minimum: 0 }
+    UpdateGoalRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          title,
+          horizon,
+          priority,
+          progressMode,
+          manualProgress,
+          expectedVersion,
+        ]
+      properties:
+        parentGoalId: { type: [string, "null"], format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: [string, "null"], maxLength: 10000 }
+        horizon: { type: string, minLength: 1, maxLength: 30 }
+        priority: { type: integer, minimum: 1, maximum: 3 }
+        progressMode: { type: string, enum: [manual, milestones, key_results] }
+        manualProgress: { type: number, minimum: 0, maximum: 100 }
+        successMeasure: { type: [string, "null"], maxLength: 2000 }
+        targetValue: { type: [number, "null"], exclusiveMinimum: 0 }
+        targetUnit: { type: [string, "null"], maxLength: 40 }
+        targetDate: { type: [string, "null"], format: date }
+        expectedVersion: { type: integer, minimum: 1 }
+    GoalMilestone:
+      type: object
+      required: [id, title, status, weight, position, version]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        title: { type: string }
+        dueDate: { type: [string, "null"], format: date }
+        status:
+          {
+            type: string,
+            enum: [planned, in_progress, completed, deferred, cancelled],
+          }
+        weight: { type: number, exclusiveMinimum: 0 }
+        position: { type: integer, minimum: 0 }
+        version: { type: integer, minimum: 1 }
+    GoalKeyResult:
+      type: object
+      required:
+        [id, title, targetValue, currentValue, unit, weight, position, version]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        title: { type: string }
+        targetValue: { type: number, exclusiveMinimum: 0 }
+        currentValue: { type: number, minimum: 0 }
+        unit: { type: string }
+        weight: { type: number, exclusiveMinimum: 0 }
+        position: { type: integer, minimum: 0 }
+        version: { type: integer, minimum: 1 }
+    CreateMilestoneRequest:
+      type: object
+      additionalProperties: false
+      required: [title, weight, clientCommandId, expectedVersion]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        dueDate: { type: [string, "null"], format: date }
+        weight: { type: number, exclusiveMinimum: 0 }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+        expectedVersion: { type: integer, minimum: 1 }
+    CreateKeyResultRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          title,
+          targetValue,
+          currentValue,
+          unit,
+          weight,
+          clientCommandId,
+          expectedVersion,
+        ]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        targetValue: { type: number, exclusiveMinimum: 0 }
+        currentValue: { type: number, minimum: 0 }
+        unit: { type: string, minLength: 1, maxLength: 40 }
+        weight: { type: number, exclusiveMinimum: 0 }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+        expectedVersion: { type: integer, minimum: 1 }
+    SaveLifeVisionRequest:
+      type: object
+      additionalProperties: false
+      required: [values, antiGoals, areas, clientCommandId]
+      properties:
+        narrative: { type: [string, "null"], maxLength: 10000 }
+        values:
+          { type: array, maxItems: 20, items: { type: string, maxLength: 100 } }
+        antiGoals:
+          { type: array, maxItems: 20, items: { type: string, maxLength: 160 } }
+        areas: { type: array, maxItems: 12, items: { type: object } }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+        expectedVersion: { type: integer, minimum: 1 }
+    LifeVisionEnvelope:
+      type: object
+      required: [data]
+      properties: { data: { type: [object, "null"] } }
+    SaveWeeklyPlanRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          weekStart,
+          capacityMinutes,
+          fixedCommitments,
+          notDoing,
+          outcomes,
+          clientCommandId,
+        ]
+      properties:
+        weekStart: { type: string, format: date }
+        theme: { type: [string, "null"], maxLength: 160 }
+        capacityMinutes: { type: integer, minimum: 0, maximum: 10080 }
+        fixedCommitments: { type: array, maxItems: 30, items: { type: object } }
+        notDoing:
+          { type: array, maxItems: 30, items: { type: string, maxLength: 160 } }
+        reflection: { type: [string, "null"], maxLength: 2000 }
+        outcomes: { type: array, maxItems: 12, items: { type: object } }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+        expectedVersion: { type: integer, minimum: 1 }
+    WeeklyPlanEnvelope:
+      type: object
+      required: [data]
+      properties: { data: { type: [object, "null"] } }
     Reminder:
       type: object
       required: [id, title, status, timeZone, ruleVersion, version, createdAt]
