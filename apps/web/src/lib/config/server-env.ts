@@ -41,6 +41,12 @@ const serverEnvironmentSchema = z.object({
   GEMINI_API_KEY: optionalSecret,
   GEMINI_MODEL: z.string().trim().min(1).max(120).default("gemini-3.6-flash"),
   GEMINI_SERVICE_TIER: z.enum(["unpaid", "paid"]).default("unpaid"),
+  VAPID_SUBJECT: optionalSecret,
+  VAPID_PUBLIC_KEY: optionalSecret,
+  VAPID_PRIVATE_KEY: optionalSecret,
+  QSTASH_TOKEN: optionalSecret,
+  QSTASH_CURRENT_SIGNING_KEY: optionalSecret,
+  QSTASH_NEXT_SIGNING_KEY: optionalSecret,
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
@@ -77,6 +83,12 @@ export function getServerEnvironment(): ServerEnvironment {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GEMINI_MODEL: process.env.GEMINI_MODEL,
     GEMINI_SERVICE_TIER: process.env.GEMINI_SERVICE_TIER,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    QSTASH_TOKEN: process.env.QSTASH_TOKEN,
+    QSTASH_CURRENT_SIGNING_KEY: process.env.QSTASH_CURRENT_SIGNING_KEY,
+    QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY,
   });
 
   if (!result.success) {
