@@ -62,9 +62,9 @@
   --popover: #ffffff;
   --popover-foreground: #17131a;
 
-  --primary: #e60076;
-  --primary-hover: #c40063;
-  --primary-active: #a70054;
+  --primary: #c40063;
+  --primary-hover: #a70054;
+  --primary-active: #8f0049;
   --primary-foreground: #ffffff;
   --primary-text: #c40063;
 
@@ -78,7 +78,7 @@
   --muted-foreground: #66616c;
   --border: #e4dfe8;
   --input: #dcd6e1;
-  --ring: #e60076;
+  --ring: #c40063;
 
   --success: #0f7a4f;
   --success-foreground: #ffffff;
@@ -87,7 +87,7 @@
   --destructive: #c62828;
   --destructive-foreground: #ffffff;
 
-  --chart-1: #e60076;
+  --chart-1: #c40063;
   --chart-2: #7c3aed;
   --chart-3: #0f7a4f;
   --chart-4: #9a5500;
@@ -95,12 +95,12 @@
 
   --sidebar: #ffffff;
   --sidebar-foreground: #28222d;
-  --sidebar-primary: #e60076;
+  --sidebar-primary: #c40063;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f8eaf2;
   --sidebar-accent-foreground: #8f0049;
   --sidebar-border: #ebe7ee;
-  --sidebar-ring: #e60076;
+  --sidebar-ring: #c40063;
 
   --glass: rgb(255 255 255 / 72%);
   --glass-strong: rgb(255 255 255 / 88%);

@@ -1,9 +1,13 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+
+import {
+  expectNoHorizontalOverflow,
+  expectNoWcagViolations,
+} from "./support/accessibility";
 
 test("redirects the root route to the Bangla experience", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/bn-BD$/);
+  await expect(page).toHaveURL(/\/bn-BD$/u);
   await expect(page.locator("html")).toHaveAttribute("lang", "bn-BD");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("মনোযোগ");
 });
@@ -12,7 +16,7 @@ test("switches to the complete English locale", async ({ page }) => {
   await page.goto("/bn-BD");
   await page.getByRole("link", { name: "English" }).click();
 
-  await expect(page).toHaveURL(/\/en$/);
+  await expect(page).toHaveURL(/\/en$/u);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Protect your attention",
@@ -29,22 +33,19 @@ test("supports keyboard navigation and a persistent dark theme", async ({
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "মূল অংশে যান" })).toBeFocused();
 
-  await expect(page.locator("html")).toHaveClass(/light/);
-  await page.getByRole("button", { name: "গাঢ় থিম ব্যবহার করুন" }).click();
-  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect(page.locator("html")).toHaveClass(/light/u);
+  await page.getByRole("button", { name: /থিম ব্যবহার করুন$/u }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/u);
 
   await page.reload();
-  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect(page.locator("html")).toHaveClass(/dark/u);
 });
 
 test("has no automatically detectable critical accessibility violations", async ({
   page,
 }) => {
   await page.goto("/bn-BD");
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations).toEqual([]);
+  await expectNoWcagViolations(page);
 });
 
 test("exposes a no-store health endpoint with correlation", async ({
@@ -62,20 +63,41 @@ test("exposes a no-store health endpoint with correlation", async ({
   });
 });
 
-test("renders an accessible Bangla authentication flow with client validation", async ({
+test("uses one accessible Google-only Authentication flow on mobile and desktop", async ({
   page,
 }) => {
+  let requestBody: Record<string, unknown> | undefined;
+  await page.route("**/api/v1/auth/oauth/google/start", async (route) => {
+    requestBody = route.request().postDataJSON() as Record<string, unknown>;
+    const origin = new URL(route.request().url()).origin;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        authorizationUrl: `${origin}/bn-BD?oauth=started`,
+        expiresAt: "2026-08-01T12:05:00.000Z",
+      }),
+    });
+  });
+
+  await page.setViewportSize({ width: 320, height: 800 });
   await page.goto("/bn-BD/sign-up");
   await expect(
-    page.getByRole("heading", { name: "আপনার FocusOS তৈরি করুন" }),
+    page.getByRole("heading", { name: "আপনার FocusOS শুরু করুন" }),
   ).toBeVisible();
-  await page.getByLabel("Email").fill("invalid-email");
-  await page.getByLabel("Password", { exact: true }).fill("weak");
-  await page.getByRole("button", { name: "Account তৈরি করুন" }).click();
-  await expect(page.getByRole("alert").first()).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Google দিয়ে চালিয়ে যান" }),
+  ).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByLabel(/Password/iu)).toHaveCount(0);
+  await expectNoWcagViolations(page);
+  await expectNoHorizontalOverflow(page, [320, 390, 768]);
 
-  const accessibility = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(accessibility.violations).toEqual([]);
+  await page.getByRole("button", { name: "Google দিয়ে চালিয়ে যান" }).click();
+  await expect(page).toHaveURL(/oauth=started/u);
+  expect(requestBody).toMatchObject({
+    locale: "bn-BD",
+    returnTo: "/bn-BD/auth-complete",
+  });
+  expect(requestBody?.timeZone).toEqual(expect.any(String));
 });
