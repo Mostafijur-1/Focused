@@ -37,6 +37,8 @@ export default defineConfig({
         "src/features/dashboard/transport/**/*.ts",
         "src/features/habits/domain/**/*.ts",
         "src/features/habits/transport/habit-schemas.ts",
+        "src/features/goals/domain/**/*.ts",
+        "src/features/goals/transport/goal-schemas.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {
