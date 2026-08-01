@@ -35,6 +35,7 @@ export interface TransitionGoalCommand extends GoalContextCommand {
   readonly expectedVersion: number;
 }
 export interface CheckInGoalCommand extends GoalContextCommand {
+  readonly timeZone?: string;
   readonly goalId: string;
   readonly progress: number;
   readonly value: number | null;

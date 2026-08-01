@@ -405,6 +405,7 @@ export class PrismaGoalRepository implements GoalRepository {
           note: command.note,
           evidenceRef: command.evidenceRef,
           recordedAt: command.now,
+          timeZone: command.timeZone ?? null,
           targetSnapshot: {
             targetValue: decimalNumber(goal.targetValue),
             targetUnit: goal.targetUnit,

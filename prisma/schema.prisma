@@ -340,6 +340,8 @@ model User {
   dashboardSnapshots     DashboardSnapshot[]
   dashboardWidgets       DashboardWidgetPreference[]
   dashboardCursor        DashboardProjectionCursor?
+  analyticsCursor        AnalyticsProjectionCursor?
+  analyticsPreference    AnalyticsPreference?
   auditEvents            AuditEvent[]                @relation("AuditActor")
   outboxEvents           OutboxEvent[]
 
@@ -666,6 +668,7 @@ model GoalCheckIn {
   evidenceRef     String?     @db.Uuid
   source          EntrySource @default(MANUAL)
   recordedAt      DateTime    @db.Timestamptz(6)
+  timeZone        String?     @db.VarChar(80)
   targetSnapshot  Json
   createdAt       DateTime    @default(now()) @db.Timestamptz(6)
   goal            Goal        @relation(fields: [goalId], references: [id], onDelete: Cascade)
@@ -1512,7 +1515,7 @@ model Notification {
 model DeliveryAttempt {
   id                String              @id @default(uuid()) @db.Uuid
   notificationId    String              @db.Uuid
-  pushSubscriptionId String?            @db.Uuid
+  pushSubscriptionId String?             @db.Uuid
   channel           NotificationChannel
   targetKey         String              @db.VarChar(100)
   provider          String              @db.VarChar(50)
@@ -1691,44 +1694,53 @@ model DailyMetricSnapshot {
 }
 
 model ReportJob {
-  id            String    @id @default(uuid()) @db.Uuid
-  userId        String    @db.Uuid
-  type          String    @db.VarChar(60)
-  status        JobStatus @default(QUEUED)
-  parameters    Json
-  result        Json?
-  schemaVersion String    @db.VarChar(40)
-  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
-  startedAt     DateTime? @db.Timestamptz(6)
-  completedAt   DateTime? @db.Timestamptz(6)
-  expiresAt     DateTime? @db.Timestamptz(6)
-  failureCode   String?   @db.VarChar(100)
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  clientCommandId String?   @db.Uuid
+  type            String    @db.VarChar(60)
+  status          JobStatus @default(QUEUED)
+  parameters      Json
+  result          Json?
+  schemaVersion   String    @db.VarChar(40)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  startedAt       DateTime? @db.Timestamptz(6)
+  completedAt     DateTime? @db.Timestamptz(6)
+  expiresAt       DateTime? @db.Timestamptz(6)
+  failureCode     String?   @db.VarChar(100)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, clientCommandId])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt])
   @@map("report_jobs")
 }
 
 model ExportJob {
-  id            String    @id @default(uuid()) @db.Uuid
-  userId        String    @db.Uuid
-  status        JobStatus @default(QUEUED)
-  categories    String[]
-  rangeStart    DateTime? @db.Timestamptz(6)
-  rangeEnd      DateTime? @db.Timestamptz(6)
-  schemaVersion String    @db.VarChar(40)
-  assetProvider String?   @db.VarChar(40)
-  assetId       String?   @db.VarChar(255)
-  checksum      String?   @db.Char(64)
-  sizeBytes     BigInt?
-  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
-  completedAt   DateTime? @db.Timestamptz(6)
-  expiresAt     DateTime? @db.Timestamptz(6)
-  downloadedAt  DateTime? @db.Timestamptz(6)
-  failureCode   String?   @db.VarChar(100)
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  clientCommandId   String?   @db.Uuid
+  status            JobStatus @default(QUEUED)
+  categories        String[]
+  rangeStart        DateTime? @db.Timestamptz(6)
+  rangeEnd          DateTime? @db.Timestamptz(6)
+  schemaVersion     String    @db.VarChar(40)
+  format            String    @default("json") @db.VarChar(20)
+  fileName          String?   @db.VarChar(180)
+  contentType       String?   @db.VarChar(100)
+  artifactEncrypted Bytes?
+  encryptionKeyId   String?   @db.VarChar(80)
+  assetProvider     String?   @db.VarChar(40)
+  assetId           String?   @db.VarChar(255)
+  checksum          String?   @db.Char(64)
+  sizeBytes         BigInt?
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  completedAt       DateTime? @db.Timestamptz(6)
+  expiresAt         DateTime? @db.Timestamptz(6)
+  downloadedAt      DateTime? @db.Timestamptz(6)
+  failureCode       String?   @db.VarChar(100)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, clientCommandId])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt])
   @@index([expiresAt])
@@ -1899,6 +1911,30 @@ model DashboardProjectionCursor {
 
   @@index([lastEventOccurredAt, lastEventId], map: "dashboard_projection_cursors_event_idx")
   @@map("dashboard_projection_cursors")
+}
+
+model AnalyticsProjectionCursor {
+  userId              String    @id @db.Uuid
+  lastEventOccurredAt DateTime? @db.Timestamptz(6)
+  lastEventId         String?   @db.Uuid
+  reconciledAt        DateTime  @default(dbgenerated("'1970-01-01 00:00:00+00'::timestamptz")) @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(6)
+  version             Int       @default(1)
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([lastEventOccurredAt, lastEventId], map: "analytics_projection_cursors_event_idx")
+  @@map("analytics_projection_cursors")
+}
+
+model AnalyticsPreference {
+  userId              String   @id @db.Uuid
+  gamificationEnabled Boolean  @default(true)
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+  version             Int      @default(1)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("analytics_preferences")
 }
 
 model AuditEvent {
