@@ -1283,29 +1283,28 @@ paths:
       tags: [Reminders]
       summary: List reminders
       operationId: listReminders
-      parameters:
-        - $ref: "#/components/parameters/PageAfter"
-        - $ref: "#/components/parameters/PageLimit"
       responses:
         "200":
           description: Reminder collection
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/PageMetaEnvelope"
-                  - type: object
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [reminders, timeZone]
                     properties:
-                      data:
+                      reminders:
                         type: array
                         items: { $ref: "#/components/schemas/Reminder" }
+                      timeZone: { type: string, maxLength: 80 }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
       tags: [Reminders]
       summary: Create a reminder
       operationId: createReminder
-      parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -1316,16 +1315,97 @@ paths:
           description: Created reminder
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Reminder" }
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/Reminder" }
+        "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
+  /reminders/{reminderId}:
+    parameters:
+      - name: reminderId
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/Uuid" }
+    put:
+      tags: [Reminders]
+      summary: Replace a reminder rule using optimistic concurrency
+      operationId: updateReminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateReminderRequest" }
+      responses:
+        "200":
+          description: Updated reminder
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/Reminder" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+    delete:
+      tags: [Reminders]
+      summary: Delete a reminder and its pending occurrences
+      operationId: deleteReminder
+      parameters:
+        - name: expectedVersion
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200": { description: Reminder deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /reminders/{reminderId}/state:
+    post:
+      tags: [Reminders]
+      summary: Pause, resume, complete, or cancel a reminder
+      operationId: transitionReminder
+      parameters:
+        - name: reminderId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReminderStateRequest" }
+      responses:
+        "200": { description: Reminder transitioned }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /reminder-occurrences/{occurrenceId}/action:
+    post:
+      tags: [Reminders]
+      summary: Snooze, skip, or complete a reminder occurrence
+      operationId: actOnReminderOccurrence
+      parameters:
+        - name: occurrenceId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OccurrenceActionRequest" }
+      responses:
+        "200": { description: Occurrence transitioned }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /push-subscriptions:
     post:
       tags: [Notifications]
       summary: Register a Web Push subscription
       operationId: createPushSubscription
-      parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
-        - $ref: "#/components/parameters/CsrfToken"
       requestBody:
         required: true
         content:
@@ -1338,11 +1418,33 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [id, createdAt]
+                required: [data]
                 properties:
-                  id: { $ref: "#/components/schemas/Uuid" }
-                  createdAt: { type: string, format: date-time }
+                  data: { $ref: "#/components/schemas/PushSubscription" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
+  /push-subscriptions/{subscriptionId}:
+    delete:
+      tags: [Notifications]
+      summary: Revoke a Web Push subscription
+      operationId: revokePushSubscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      responses:
+        "200": { description: Subscription revoked }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /push-subscriptions/test:
+    post:
+      tags: [Notifications]
+      summary: Send a privacy-safe test Push to active devices
+      operationId: testPushSubscription
+      responses:
+        "200": { description: Test delivery attempted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
   /notifications:
     get:
       tags: [Notifications]
@@ -1357,14 +1459,68 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/PageMetaEnvelope"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Notification" }
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/NotificationPage" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /notifications/overview:
+    get:
+      tags: [Notifications]
+      summary: Read the inbox, reminder, preference, and Push overview
+      operationId: getNotificationOverview
+      responses:
+        "200":
+          description: Owner-scoped notification overview
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/NotificationOverview" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /notifications/{notificationId}:
+    patch:
+      tags: [Notifications]
+      summary: Mark read/unread or archive/restore a notification
+      operationId: updateNotificationState
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Uuid" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationStateRequest" }
+      responses:
+        "200": { description: Notification updated }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /notification-preferences:
+    get:
+      tags: [Notifications]
+      summary: Read the current member notification preferences
+      operationId: getNotificationPreferences
+      responses:
+        "200": { description: Notification preferences }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [Notifications]
+      summary: Replace category, quiet-hours, and preview preferences
+      operationId: updateNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/NotificationPreferenceUpdate" }
+      responses:
+        "200": { description: Preferences updated }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
   /ai:
     get:
       tags: [AI]
@@ -1697,6 +1853,11 @@ components:
       description: Request or budget rate limit exceeded
       headers:
         Retry-After: { schema: { type: integer, minimum: 1 } }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    DependencyUnavailable:
+      description: A configured external delivery dependency is unavailable
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -2772,41 +2933,134 @@ components:
       properties: { data: { type: [object, "null"] } }
     Reminder:
       type: object
-      required: [id, title, status, timeZone, ruleVersion, version, createdAt]
+      required:
+        [
+          id,
+          title,
+          body,
+          status,
+          timeZone,
+          schedule,
+          channels,
+          nextOccurrenceAt,
+          nextOccurrence,
+          lastOutcome,
+          ruleVersion,
+          version,
+          createdAt,
+        ]
       properties:
         id: { $ref: "#/components/schemas/Uuid" }
-        title: { type: string }
-        body: { type: [string, "null"] }
+        title: { type: string, maxLength: 200 }
+        body: { type: [string, "null"], maxLength: 500 }
         status: { type: string, enum: [ACTIVE, PAUSED, COMPLETED, CANCELLED] }
-        timeZone: { type: string }
-        localTime: { type: [string, "null"] }
-        rrule: { type: [string, "null"] }
-        oneTimeAt: { type: [string, "null"], format: date-time }
+        timeZone: { type: string, maxLength: 80 }
+        schedule: { $ref: "#/components/schemas/ReminderSchedule" }
+        channels: { $ref: "#/components/schemas/NotificationChannelPreference" }
         nextOccurrenceAt: { type: [string, "null"], format: date-time }
+        nextOccurrence:
+          oneOf:
+            - type: object
+              required: [id, scheduledFor, version]
+              properties:
+                id: { $ref: "#/components/schemas/Uuid" }
+                scheduledFor: { type: string, format: date-time }
+                version: { type: integer, minimum: 1 }
+            - type: "null"
+        lastOutcome:
+          type: [string, "null"]
+          enum:
+            [
+              PENDING,
+              DEFERRED,
+              ENQUEUED,
+              DELIVERED,
+              COMPLETED,
+              MISSED,
+              CANCELLED,
+              FAILED,
+              null,
+            ]
         ruleVersion: { type: integer, minimum: 1 }
         version: { type: integer, minimum: 1 }
         createdAt: { type: string, format: date-time }
+    NotificationChannelPreference:
+      type: object
+      additionalProperties: false
+      required: [inApp, webPush]
+      properties:
+        inApp: { type: boolean }
+        webPush: { type: boolean }
+    ReminderSchedule:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [kind, at]
+          properties:
+            kind: { type: string, const: once }
+            at: { type: string, format: date-time }
+        - type: object
+          additionalProperties: false
+          required: [kind, startsOn, localTime, interval]
+          properties:
+            kind: { type: string, const: daily }
+            startsOn: { type: string, format: date }
+            localTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+            interval: { type: integer, minimum: 1, maximum: 30 }
+        - type: object
+          additionalProperties: false
+          required: [kind, startsOn, localTime, weekdays]
+          properties:
+            kind: { type: string, const: weekly }
+            startsOn: { type: string, format: date }
+            localTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+            weekdays:
+              type: array
+              minItems: 1
+              maxItems: 7
+              uniqueItems: true
+              items: { type: integer, minimum: 0, maximum: 6 }
     CreateReminderRequest:
       type: object
       additionalProperties: false
-      required: [title, timeZone, deliveryPolicy]
-      oneOf:
-        - required: [oneTimeAt]
-        - required: [localTime, rrule]
+      required: [title, timeZone, schedule, channels, clientCommandId]
       properties:
         title: { type: string, minLength: 1, maxLength: 200 }
-        body: { type: string, maxLength: 500 }
+        body: { type: [string, "null"], maxLength: 500 }
         timeZone: { type: string, maxLength: 80 }
-        localTime:
-          { type: string, pattern: '^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$' }
-        rrule: { type: string, maxLength: 2000 }
-        oneTimeAt: { type: string, format: date-time }
-        quietHoursPolicy: { type: object }
-        deliveryPolicy: { type: object }
+        schedule: { $ref: "#/components/schemas/ReminderSchedule" }
+        channels: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        clientCommandId: { $ref: "#/components/schemas/Uuid" }
+    UpdateReminderRequest:
+      type: object
+      additionalProperties: false
+      required: [title, timeZone, schedule, channels, expectedVersion]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        body: { type: [string, "null"], maxLength: 500 }
+        timeZone: { type: string, maxLength: 80 }
+        schedule: { $ref: "#/components/schemas/ReminderSchedule" }
+        channels: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        expectedVersion: { type: integer, minimum: 1 }
+    ReminderStateRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [pause, resume, complete, cancel] }
+        expectedVersion: { type: integer, minimum: 1 }
+    OccurrenceActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [snooze, skip, complete] }
+        expectedVersion: { type: integer, minimum: 1 }
+        snoozedUntil: { type: [string, "null"], format: date-time }
     PushSubscriptionRequest:
       type: object
       additionalProperties: false
-      required: [endpoint, keys]
+      required: [endpoint, expirationTime, keys, locale]
       properties:
         endpoint: { type: string, format: uri, maxLength: 4096 }
         expirationTime: { type: [number, "null"] }
@@ -2817,18 +3071,127 @@ components:
           properties:
             p256dh: { type: string, minLength: 20, maxLength: 256 }
             auth: { type: string, minLength: 10, maxLength: 128 }
-        deviceName: { type: string, maxLength: 120 }
-    Notification:
+        deviceName: { type: [string, "null"], maxLength: 120 }
+        locale: { type: string, enum: [bn-BD, en] }
+    PushSubscription:
       type: object
-      required: [id, category, title, createdAt]
+      required: [id, deviceName, locale, expiresAt, lastSuccessAt, createdAt]
       properties:
         id: { $ref: "#/components/schemas/Uuid" }
-        category: { type: string }
-        title: { type: string }
-        body: { type: [string, "null"] }
-        deepLink: { type: [string, "null"] }
-        readAt: { type: [string, "null"], format: date-time }
+        deviceName: { type: [string, "null"] }
+        locale: { type: string, enum: [bn-BD, en] }
+        expiresAt: { type: [string, "null"], format: date-time }
+        lastSuccessAt: { type: [string, "null"], format: date-time }
         createdAt: { type: string, format: date-time }
+    Notification:
+      type: object
+      required:
+        [
+          id,
+          category,
+          title,
+          body,
+          deepLink,
+          readAt,
+          archivedAt,
+          expiresAt,
+          createdAt,
+          version,
+        ]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        category:
+          {
+            type: string,
+            enum: [reminder, focus, habit, goal, planning, system],
+          }
+        title: { type: string, maxLength: 160 }
+        body: { type: [string, "null"], maxLength: 300 }
+        deepLink: { type: [string, "null"], maxLength: 500 }
+        readAt: { type: [string, "null"], format: date-time }
+        archivedAt: { type: [string, "null"], format: date-time }
+        expiresAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        version: { type: integer, minimum: 1 }
+    NotificationPage:
+      type: object
+      required: [items, nextCursor, unreadCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Notification" }
+        nextCursor: { type: [string, "null"], format: uuid }
+        unreadCount: { type: integer, minimum: 0 }
+    NotificationCategoryPreferences:
+      type: object
+      additionalProperties: false
+      required: [reminder, focus, habit, goal, planning, system]
+      properties:
+        reminder: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        focus: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        habit: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        goal: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        planning: { $ref: "#/components/schemas/NotificationChannelPreference" }
+        system: { $ref: "#/components/schemas/NotificationChannelPreference" }
+    QuietHours:
+      type: object
+      additionalProperties: false
+      required: [enabled, start, end, timeZone]
+      properties:
+        enabled: { type: boolean }
+        start: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        end: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+        timeZone: { type: string, maxLength: 80 }
+    NotificationPreferences:
+      type: object
+      required: [categories, quietHours, previewPolicy, version, updatedAt]
+      properties:
+        categories:
+          { $ref: "#/components/schemas/NotificationCategoryPreferences" }
+        quietHours: { $ref: "#/components/schemas/QuietHours" }
+        previewPolicy: { type: string, enum: [MINIMAL, HIDDEN] }
+        version: { type: integer, minimum: 1 }
+        updatedAt: { type: [string, "null"], format: date-time }
+    NotificationPreferenceUpdate:
+      type: object
+      additionalProperties: false
+      required: [categories, quietHours, previewPolicy, expectedVersion]
+      properties:
+        categories:
+          { $ref: "#/components/schemas/NotificationCategoryPreferences" }
+        quietHours: { $ref: "#/components/schemas/QuietHours" }
+        previewPolicy: { type: string, enum: [MINIMAL, HIDDEN] }
+        expectedVersion: { type: integer, minimum: 1 }
+    NotificationStateRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [read, unread, archive, restore] }
+        expectedVersion: { type: integer, minimum: 1 }
+    NotificationOverview:
+      type: object
+      required: [inbox, preferences, reminders, push]
+      properties:
+        inbox: { $ref: "#/components/schemas/NotificationPage" }
+        preferences: { $ref: "#/components/schemas/NotificationPreferences" }
+        reminders:
+          type: object
+          required: [reminders, timeZone]
+          properties:
+            reminders:
+              type: array
+              items: { $ref: "#/components/schemas/Reminder" }
+            timeZone: { type: string, maxLength: 80 }
+        push:
+          type: object
+          required: [configured, publicKey, subscriptions]
+          properties:
+            configured: { type: boolean }
+            publicKey: { type: [string, "null"] }
+            subscriptions:
+              type: array
+              items: { $ref: "#/components/schemas/PushSubscription" }
     AIContextScope:
       type: string
       enum: [daily_plan, focus_summary, habit_summary, goal_summary]

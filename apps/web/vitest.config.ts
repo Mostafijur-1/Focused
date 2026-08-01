@@ -45,6 +45,12 @@ export default defineConfig({
         "src/features/ai/infrastructure/providers/provider-router.ts",
         "src/features/ai/infrastructure/providers/circuit-breaking-provider.ts",
         "src/features/ai/transport/ai-schemas.ts",
+        "src/features/notifications/domain/**/*.ts",
+        "src/features/notifications/application/notification-service.ts",
+        "src/features/notifications/application/reminder-service.ts",
+        "src/features/notifications/application/notification-worker.ts",
+        "src/features/notifications/infrastructure/push/web-push-gateway.ts",
+        "src/features/notifications/transport/notification-schemas.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {

@@ -24,7 +24,7 @@ The CI quality gate runs the same command. Route handlers must update their Zod 
 
 ## Implemented endpoints
 
-Milestones 1–8 implement health, Authentication, member sessions, Dashboard, Habits, Goals and planning, Focus Timer, AI Coach, AI Daily Review, and explicit AI proposal decisions. Retryable commands use body-level `clientCommandId` values; mutable aggregates use `expectedVersion`. AI Coach responses use typed SSE, while Daily Review responses are Zod-validated structured JSON. The canonical paths and schemas are in OpenAPI; operations are documented under `docs/`, including [`../docs/ai-coach.md`](../docs/ai-coach.md).
+Milestones 1–9 implement health, Authentication, member sessions, Dashboard, Habits, Goals and planning, Focus Timer, AI Coach, AI Daily Review, explicit AI proposal decisions, Notifications, Reminders, and Web Push subscriptions. Retryable commands use body-level `clientCommandId` values; mutable aggregates and occurrences use `expectedVersion`. AI Coach responses use typed SSE, while Daily Review responses are Zod-validated structured JSON. The canonical paths and schemas are in OpenAPI; operations are documented under `docs/`, including [`../docs/ai-coach.md`](../docs/ai-coach.md) and [`../docs/notifications.md`](../docs/notifications.md).
 
 Other paths remain approved forward contracts and are implemented milestone by milestone. Unimplemented contracts must not be deployed as handlers returning misleading success states.
 

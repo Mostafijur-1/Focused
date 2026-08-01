@@ -4,7 +4,7 @@ Focused is a Bangla-first Focus Operating System (FocusOS) designed to help peop
 
 ## Current implementation
 
-Milestones 1 through 8 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, authoritative Focus Timer, and consent-driven AI Guidance foundations:
+Milestones 1 through 9 establish the production, Authentication, PostgreSQL persistence, Dashboard, Habit System, Goals, authoritative Focus Timer, consent-driven AI Guidance, and privacy-preserving Notification foundations:
 
 - Next.js 16 App Router with React 19 and strict TypeScript
 - Server Components by default and narrow Client Component boundaries
@@ -33,8 +33,11 @@ Milestones 1 through 8 establish the production, Authentication, PostgreSQL pers
 - Request-scoped AI context grants limited to Daily Plan, Focus, Habit, and Goal summaries; sensitive private modules remain excluded by default
 - Bangla-first AI Coach and AI Daily Review with evidence labels, deterministic non-AI degradation, and user-controlled Goal proposals
 - Explicit, versioned proposal decisions that call the normal Goal use case only after member confirmation
+- Durable one-time, daily, and weekly reminders with time-zone/DST-safe expansion, optimistic concurrency, and occurrence-level snooze/skip/complete controls
+- Server-enforced category preferences, quiet hours, daily caps, privacy-safe Web Push, encrypted device subscriptions, and an authoritative in-app inbox
+- QStash-signed bounded workers with PostgreSQL `SKIP LOCKED` claims, idempotent materialization, per-device delivery attempts, retries, and reconciliation
 
-Notifications, analytics, and later FocusOS modules remain forward contracts until their approved milestones.
+Analytics and later FocusOS modules remain forward contracts until their approved milestones.
 
 ## Architecture
 
@@ -85,7 +88,7 @@ Open `http://localhost:3000`; the root redirects to `/bn-BD`. English is availab
 
 ## Environment variables
 
-The complete Authentication variable catalog and key-generation instructions are in [docs/authentication.md](docs/authentication.md). `DATABASE_URL` uses Neon's pooled runtime endpoint; `DIRECT_URL` uses its direct migration endpoint. Never expose a secret with a `NEXT_PUBLIC_` prefix.
+The complete Authentication variable catalog and key-generation instructions are in [docs/authentication.md](docs/authentication.md); Web Push and QStash setup is in [docs/notifications.md](docs/notifications.md). `DATABASE_URL` uses Neon's pooled runtime endpoint; `DIRECT_URL` uses its direct migration endpoint. Never expose a secret with a `NEXT_PUBLIC_` prefix.
 
 ## Commands
 
@@ -196,6 +199,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Goals, Life Vision, and Weekly Planning](docs/goals.md)
 - [Focus Timer and Pomodoro](docs/focus-timer.md)
 - [AI Coach, Daily Review, and Provider Operations](docs/ai-coach.md)
+- [Notifications, Web Push, and Reminder Operations](docs/notifications.md)
 
 ## Contribution workflow
 
