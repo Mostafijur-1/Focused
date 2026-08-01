@@ -51,6 +51,8 @@ export default defineConfig({
         "src/features/notifications/application/notification-worker.ts",
         "src/features/notifications/infrastructure/push/web-push-gateway.ts",
         "src/features/notifications/transport/notification-schemas.ts",
+        "src/features/analytics/domain/**/*.ts",
+        "src/features/analytics/transport/analytics-schemas.ts",
       ],
       exclude: ["**/*.d.ts"],
       thresholds: {

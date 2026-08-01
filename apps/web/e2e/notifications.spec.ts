@@ -174,6 +174,7 @@ test("exposes every implemented workspace from the mobile feature menu", async (
     Goals: "/en/goals",
     Week: "/en/week",
     Notifications: "/en/notifications",
+    Analytics: "/en/analytics",
     Security: "/en/security",
   } as const;
   for (const [label, href] of Object.entries(destinations)) {

@@ -36,8 +36,10 @@ Milestones 1 through 9 establish the production, Authentication, PostgreSQL pers
 - Durable one-time, daily, and weekly reminders with time-zone/DST-safe expansion, optimistic concurrency, and occurrence-level snooze/skip/complete controls
 - Server-enforced category preferences, quiet hours, daily caps, privacy-safe Web Push, encrypted device subscriptions, and an authoritative in-app inbox
 - QStash-signed bounded workers with PostgreSQL `SKIP LOCKED` claims, idempotent materialization, per-device delivery attempts, retries, and reconciliation
+- Versioned Focus and Distraction Analytics projections with deterministic rebuilds, bounded 366-day reads, historical timezone handling, and explicit metric definitions
+- Accessible chart/table parity, privacy-filtered immutable reports, AES-GCM encrypted CSV/JSON exports with checksums and expiry, and optional positive-only XP/levels
 
-Analytics and later FocusOS modules remain forward contracts until their approved milestones.
+Admin and later FocusOS modules remain forward contracts until their approved milestones.
 
 ## Architecture
 
@@ -200,6 +202,7 @@ The CSP remains report-only until production telemetry proves all required sourc
 - [Focus Timer and Pomodoro](docs/focus-timer.md)
 - [AI Coach, Daily Review, and Provider Operations](docs/ai-coach.md)
 - [Notifications, Web Push, and Reminder Operations](docs/notifications.md)
+- [Analytics, Reports, Exports, and Gamification](docs/analytics.md)
 
 ## Contribution workflow
 

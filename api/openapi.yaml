@@ -43,6 +43,10 @@ tags:
     description: In-app notifications, preferences, and Web Push subscriptions.
   - name: AI
     description: Provider-neutral scoped AI runs routed through approved Groq or Gemini adapters, with streams, evidence, and user-approved proposals.
+  - name: Analytics
+    description: Versioned, privacy-filtered Focus and Distraction Analytics projections.
+  - name: Gamification
+    description: Optional positive-only XP, levels, achievements, and streak preferences.
   - name: Jobs
     description: Durable asynchronous reports, exports, and status resources.
   - name: Administration
@@ -1657,13 +1661,72 @@ paths:
                   data: { $ref: "#/components/schemas/AIProposal" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
-  /exports:
-    post:
-      tags: [Jobs]
-      summary: Create a private data export job
-      operationId: createExportJob
+  /analytics:
+    get:
+      tags: [Analytics]
+      summary: Get the current member analytics projection
+      operationId: getAnalytics
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: start
+          in: query
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Versioned daily projection and summary; ranges are limited to 366 days
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/AnalyticsSnapshot" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /analytics/rebuild:
+    post:
+      tags: [Analytics]
+      summary: Deterministically rebuild the current member projection
+      operationId: rebuildAnalytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnalyticsRange" }
+      responses:
+        "200":
+          description: Rebuilt projection
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/AnalyticsSnapshot" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /reports:
+    get:
+      tags: [Analytics]
+      summary: List the current member immutable analytics reports
+      operationId: listAnalyticsReports
+      responses:
+        "200":
+          description: Up to 20 recent reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AnalyticsReport" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Analytics]
+      summary: Capture an immutable analytics report
+      operationId: createAnalyticsReport
       requestBody:
         required: true
         content:
@@ -1671,30 +1734,68 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [categories, format]
+              required: [range, clientCommandId]
               properties:
-                categories:
-                  type: array
-                  minItems: 1
-                  uniqueItems: true
-                  items: { type: string }
-                format: { type: string, enum: [json, csv_bundle, pdf] }
-                rangeStart: { type: string, format: date-time }
-                rangeEnd: { type: string, format: date-time }
+                range: { $ref: "#/components/schemas/AnalyticsRange" }
+                clientCommandId: { $ref: "#/components/schemas/Uuid" }
       responses:
-        "202":
-          description: Export accepted
-          headers:
-            Location: { schema: { type: string } }
+        "201":
+          description: Completed report snapshot
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Job" }
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AnalyticsReport" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
-  /exports/{exportId}:
+  /exports:
     get:
-      tags: [Jobs]
-      summary: Get data export job status
-      operationId: getExportJob
+      tags: [Analytics]
+      summary: List the current member analytics exports
+      operationId: listAnalyticsExports
+      responses:
+        "200":
+          description: Up to 20 recent encrypted export artifacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AnalyticsExport" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Analytics]
+      summary: Create a bounded privacy-filtered analytics export
+      operationId: createAnalyticsExport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [range, format, clientCommandId]
+              properties:
+                range: { $ref: "#/components/schemas/AnalyticsRange" }
+                format: { type: string, enum: [json, csv] }
+                clientCommandId: { $ref: "#/components/schemas/Uuid" }
+      responses:
+        "201":
+          description: Encrypted export artifact is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AnalyticsExport" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+  /exports/{exportId}/download:
+    get:
+      tags: [Analytics]
+      summary: Download and integrity-check an unexpired owner-scoped export
+      operationId: downloadAnalyticsExport
       parameters:
         - name: exportId
           in: path
@@ -1702,11 +1803,51 @@ paths:
           schema: { $ref: "#/components/schemas/Uuid" }
       responses:
         "200":
-          description: Export state; download URL is short lived when present
+          description: CSV or JSON artifact with an X-Content-Sha256 checksum
+          content:
+            application/json: { schema: { type: string } }
+            text/csv: { schema: { type: string } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /gamification:
+    get:
+      tags: [Gamification]
+      summary: Get optional positive-only gamification state
+      operationId: getGamification
+      responses:
+        "200":
+          description: XP, level, awards, streaks, and preference state
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Job" }
-        "404": { $ref: "#/components/responses/NotFound" }
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Gamification" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [Gamification]
+      summary: Enable or disable gamification for the current member
+      operationId: updateGamification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [enabled, expectedVersion]
+              properties:
+                enabled: { type: boolean }
+                expectedVersion: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Updated preference and state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Gamification" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /admin/audit:
     get:
       tags: [Administration]
@@ -3316,20 +3457,216 @@ components:
         proposals:
           type: array
           items: { $ref: "#/components/schemas/AIProposal" }
-    Job:
+    AnalyticsRange:
       type: object
-      required: [id, status, createdAt]
+      additionalProperties: false
+      required: [start, end]
+      properties:
+        start: { type: string, format: date }
+        end: { type: string, format: date }
+    AnalyticsDailyPoint:
+      type: object
+      required:
+        [
+          localDate,
+          focusedSeconds,
+          plannedSeconds,
+          completedSessions,
+          abandonedSessions,
+          outcomesCaptured,
+          interruptionCount,
+          interruptionsByCategory,
+          interruptionsByHour,
+          habitDue,
+          habitCompleted,
+          habitSkipped,
+          habitExcused,
+          goalCheckIns,
+          goalProgressTotal,
+          weeklyPlansFinalized,
+        ]
+      properties:
+        localDate: { type: string, format: date }
+        focusedSeconds: { type: integer, minimum: 0 }
+        plannedSeconds: { type: integer, minimum: 0 }
+        completedSessions: { type: integer, minimum: 0 }
+        abandonedSessions: { type: integer, minimum: 0 }
+        outcomesCaptured: { type: integer, minimum: 0 }
+        interruptionCount: { type: integer, minimum: 0 }
+        interruptionsByCategory:
+          { type: object, additionalProperties: { type: integer, minimum: 0 } }
+        interruptionsByHour:
+          { type: object, additionalProperties: { type: integer, minimum: 0 } }
+        habitDue: { type: integer, minimum: 0 }
+        habitCompleted: { type: integer, minimum: 0 }
+        habitSkipped: { type: integer, minimum: 0 }
+        habitExcused: { type: integer, minimum: 0 }
+        goalCheckIns: { type: integer, minimum: 0 }
+        goalProgressTotal: { type: number, minimum: 0 }
+        weeklyPlansFinalized: { type: integer, minimum: 0 }
+    AnalyticsSnapshot:
+      type: object
+      required:
+        [
+          schemaVersion,
+          metricVersion,
+          range,
+          timeZone,
+          computedAt,
+          sourceThrough,
+          freshness,
+          summary,
+          daily,
+          interruptions,
+          definitions,
+          limitations,
+        ]
+      properties:
+        schemaVersion: { type: integer, const: 1 }
+        metricVersion: { type: string, const: focused.analytics.v1 }
+        range:
+          allOf:
+            - $ref: "#/components/schemas/AnalyticsRange"
+            - type: object
+              required: [days]
+              properties:
+                days: { type: integer, minimum: 1, maximum: 366 }
+        timeZone: { type: string, maxLength: 80 }
+        computedAt: { type: string, format: date-time }
+        sourceThrough: { type: string, format: date-time }
+        freshness: { type: string, enum: [fresh, partial] }
+        summary:
+          type: object
+          additionalProperties: false
+          required:
+            [
+              focusedSeconds,
+              plannedSeconds,
+              completedSessions,
+              abandonedSessions,
+              planAttainmentPercent,
+              outcomeRatePercent,
+              activeFocusDays,
+              interruptionCount,
+              habitDue,
+              habitEligible,
+              habitCompleted,
+              habitSkipped,
+              habitExcused,
+              habitCompletionPercent,
+              goalCheckIns,
+              averageGoalProgress,
+              weeklyPlansFinalized,
+            ]
+          properties:
+            focusedSeconds: { type: integer, minimum: 0 }
+            plannedSeconds: { type: integer, minimum: 0 }
+            completedSessions: { type: integer, minimum: 0 }
+            abandonedSessions: { type: integer, minimum: 0 }
+            planAttainmentPercent:
+              { type: [number, "null"], minimum: 0, maximum: 100 }
+            outcomeRatePercent:
+              { type: [number, "null"], minimum: 0, maximum: 100 }
+            activeFocusDays: { type: integer, minimum: 0 }
+            interruptionCount: { type: integer, minimum: 0 }
+            habitDue: { type: integer, minimum: 0 }
+            habitEligible: { type: integer, minimum: 0 }
+            habitCompleted: { type: integer, minimum: 0 }
+            habitSkipped: { type: integer, minimum: 0 }
+            habitExcused: { type: integer, minimum: 0 }
+            habitCompletionPercent:
+              { type: [number, "null"], minimum: 0, maximum: 100 }
+            goalCheckIns: { type: integer, minimum: 0 }
+            averageGoalProgress:
+              { type: [number, "null"], minimum: 0, maximum: 100 }
+            weeklyPlansFinalized: { type: integer, minimum: 0 }
+        daily:
+          type: array
+          maxItems: 366
+          items: { $ref: "#/components/schemas/AnalyticsDailyPoint" }
+        interruptions:
+          type: object
+          required: [total, byCategory, byHour, sampleSize, disclosure]
+          properties:
+            total: { type: integer, minimum: 0 }
+            byCategory:
+              {
+                type: object,
+                additionalProperties: { type: integer, minimum: 0 },
+              }
+            byHour:
+              {
+                type: object,
+                additionalProperties: { type: integer, minimum: 0 },
+              }
+            sampleSize: { type: integer, minimum: 0 }
+            disclosure: { type: string, const: self_reported_only }
+        definitions:
+          type: array
+          items:
+            type: object
+            required: [key, version, unit, definition]
+            properties:
+              key: { type: string }
+              version: { type: integer, minimum: 1 }
+              unit: { type: string }
+              definition: { type: string }
+        limitations: { type: array, items: { type: string } }
+    AnalyticsReport:
+      type: object
+      required:
+        [id, type, status, schemaVersion, createdAt, expiresAt, snapshot]
       properties:
         id: { $ref: "#/components/schemas/Uuid" }
-        status:
-          {
-            type: string,
-            enum:
-              [QUEUED, RUNNING, COMPLETED, PARTIAL, FAILED, CANCELLED, EXPIRED],
-          }
-        progress: { type: number, minimum: 0, maximum: 1 }
-        downloadUrl: { type: [string, "null"], format: uri }
-        expiresAt: { type: [string, "null"], format: date-time }
+        type: { type: string, const: analytics_summary }
+        status: { type: string, const: completed }
+        schemaVersion: { type: string, const: focused.analytics.v1 }
         createdAt: { type: string, format: date-time }
-        completedAt: { type: [string, "null"], format: date-time }
-        failureCode: { type: [string, "null"] }
+        expiresAt: { type: string, format: date-time }
+        snapshot: { $ref: "#/components/schemas/AnalyticsSnapshot" }
+    AnalyticsExport:
+      type: object
+      required:
+        [
+          id,
+          status,
+          format,
+          fileName,
+          contentType,
+          checksum,
+          sizeBytes,
+          createdAt,
+          expiresAt,
+        ]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        status: { type: string, const: completed }
+        format: { type: string, enum: [csv, json] }
+        fileName: { type: string }
+        contentType: { type: string }
+        checksum: { type: string, minLength: 64, maxLength: 64 }
+        sizeBytes: { type: integer, minimum: 0, maximum: 5242880 }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    Gamification:
+      type: object
+      required:
+        [
+          enabled,
+          version,
+          totalXp,
+          level,
+          levelTitle,
+          nextLevelXp,
+          achievements,
+          streaks,
+        ]
+      properties:
+        enabled: { type: boolean }
+        version: { type: integer, minimum: 1 }
+        totalXp: { type: integer, minimum: 0 }
+        level: { type: integer, minimum: 1 }
+        levelTitle: { type: string }
+        nextLevelXp: { type: [integer, "null"], minimum: 0 }
+        achievements: { type: array, items: { type: object } }
+        streaks: { type: array, items: { type: object } }
