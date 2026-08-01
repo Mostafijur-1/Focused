@@ -1,9 +1,9 @@
 import {
   BarChart3,
   CalendarDays,
-  CircleUserRound,
   ListChecks,
   LayoutDashboard,
+  Target,
 } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { key: "dashboard", icon: LayoutDashboard, available: true },
   { key: "habits", icon: ListChecks, available: true },
-  { key: "week", icon: CalendarDays, available: false },
+  { key: "goals", icon: Target, available: true },
+  { key: "week", icon: CalendarDays, available: true },
   { key: "analytics", icon: BarChart3, available: false },
-  { key: "profile", icon: CircleUserRound, available: false },
 ] as const;
 
 interface AppShellProps {
@@ -151,9 +151,9 @@ const shellCopy = {
     mobileNavigationLabel: "মোবাইল নেভিগেশন",
     dashboard: "Dashboard",
     habits: "অভ্যাস",
+    goals: "লক্ষ্য",
     week: "সপ্তাহ",
     analytics: "বিশ্লেষণ",
-    profile: "প্রোফাইল",
     comingSoon: "শিগগিরই আসছে",
   },
   en: {
@@ -162,9 +162,9 @@ const shellCopy = {
     mobileNavigationLabel: "Mobile navigation",
     dashboard: "Dashboard",
     habits: "Habits",
+    goals: "Goals",
     week: "Week",
     analytics: "Analytics",
-    profile: "Profile",
     comingSoon: "Coming soon",
   },
 } as const;
