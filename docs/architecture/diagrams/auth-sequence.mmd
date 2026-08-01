@@ -7,19 +7,13 @@ sequenceDiagram
   participant DB as PostgreSQL
   participant R as Redis
 
-  alt Passwordless or credential sign-in
-    U->>B: Submit credentials / verification
-    B->>API: POST /api/v1/auth/login
-    API->>DB: Verify identity and account status
-  else OAuth Authorization Code + PKCE
-    U->>B: Choose provider
-    B->>API: POST /api/v1/auth/oauth/{provider}/start
-    API-->>B: authorize URL + state + nonce
-    B->>OAuth: Authorization request + PKCE challenge
-    OAuth-->>API: callback with code + state
-    API->>OAuth: Exchange code + verifier
-    API->>DB: Upsert verified provider identity
-  end
+  U->>B: Continue with Google
+  B->>API: POST /api/v1/auth/oauth/google/start
+  API-->>B: authorize URL + state + nonce
+  B->>OAuth: Authorization request + PKCE challenge
+  OAuth-->>API: callback with code + state
+  API->>OAuth: Exchange code + verifier
+  API->>DB: Upsert verified Google identity
 
   API->>DB: Create session + refresh-token family (hash only)
   API-->>B: Access JWT (5-10 min) + rotated refresh token
