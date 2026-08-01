@@ -25,10 +25,11 @@
     "test": "corepack pnpm --filter @focused/web test",
     "test:coverage": "corepack pnpm --filter @focused/web test:coverage",
     "test:e2e": "corepack pnpm --filter @focused/web test:e2e",
+    "test:deployment": "node --test scripts/deployment/*.test.mjs",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "api:lint": "redocly lint api/openapi.yaml",
-    "quality": "corepack pnpm db:validate && corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test:coverage && corepack pnpm api:lint && corepack pnpm build"
+    "quality": "corepack pnpm db:validate && corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test:coverage && corepack pnpm test:deployment && corepack pnpm api:lint && corepack pnpm build"
   },
   "devDependencies": {
     "@redocly/cli": "2.43.2",

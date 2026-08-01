@@ -60,6 +60,9 @@ jobs:
       - name: Type-check
         run: pnpm typecheck
 
+      - name: Test deployment controls
+        run: pnpm test:deployment
+
       - name: Test with coverage
         run: pnpm test:coverage
 

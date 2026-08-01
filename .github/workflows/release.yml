@@ -1,0 +1,204 @@
+name: Protected Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact tested commit SHA (40 hexadecimal characters)
+        required: true
+        type: string
+      target:
+        description: Protected GitHub Environment and Vercel target
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+      confirm_production:
+        description: Required together with Environment approval for production
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: focused-release-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  attestations: write
+  contents: read
+  id-token: write
+
+jobs:
+  release:
+    name: Validate, migrate, deploy, and smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_APP_URL: ${{ vars.APP_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      AUTH_JWT_PRIVATE_KEY_BASE64: ${{ secrets.AUTH_JWT_PRIVATE_KEY_BASE64 }}
+      AUTH_JWT_PUBLIC_KEY_BASE64: ${{ secrets.AUTH_JWT_PUBLIC_KEY_BASE64 }}
+      AUTH_JWT_KEY_ID: ${{ vars.AUTH_JWT_KEY_ID }}
+      AUTH_JWT_ISSUER: ${{ vars.AUTH_JWT_ISSUER }}
+      AUTH_JWT_AUDIENCE: ${{ vars.AUTH_JWT_AUDIENCE }}
+      AUTH_DATA_ENCRYPTION_KEY_BASE64: ${{ secrets.AUTH_DATA_ENCRYPTION_KEY_BASE64 }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+      VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+      QSTASH_CURRENT_SIGNING_KEY: ${{ secrets.QSTASH_CURRENT_SIGNING_KEY }}
+      QSTASH_NEXT_SIGNING_KEY: ${{ secrets.QSTASH_NEXT_SIGNING_KEY }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Validate release input
+        shell: bash
+        run: |
+          if [[ ! "${{ inputs.release_sha }}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "release_sha must be an exact 40-character lowercase commit SHA."
+            exit 1
+          fi
+          if [[ "${{ inputs.target }}" == "production" && "${{ inputs.confirm_production }}" != "true" ]]; then
+            echo "Production requires confirm_production plus protected Environment approval."
+            exit 1
+          fi
+
+      - name: Checkout immutable release commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - name: Require a successful Quality Gate for this commit
+        uses: actions/github-script@v8
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        with:
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: process.env.RELEASE_SHA,
+              status: "completed",
+              per_page: 100,
+            });
+            const quality = data.workflow_runs.find(
+              (run) => run.name === "Quality Gate" && run.conclusion === "success",
+            );
+            if (!quality) {
+              core.setFailed("This exact commit has no successful Quality Gate run.");
+            }
+
+      - name: Require a version tag for production
+        if: ${{ inputs.target == 'production' }}
+        shell: bash
+        run: |
+          release_tag="$(git tag --points-at HEAD --list 'v*' | head -n 1)"
+          if [[ -z "$release_tag" ]]; then
+            echo "Production commits must have a v-prefixed release tag."
+            exit 1
+          fi
+          echo "RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate deployment scripts
+        run: pnpm test:deployment
+
+      - name: Validate isolated environment
+        shell: bash
+        run: |
+          arguments=(--target "${{ inputs.target }}")
+          if [[ "${{ inputs.target }}" == "production" ]]; then
+            arguments+=(--strict-capabilities)
+          fi
+          node scripts/deployment/validate-environment.mjs "${arguments[@]}"
+
+      - name: Pull protected Vercel project configuration
+        run: pnpm dlx vercel@58.4.4 pull --yes --environment=${{ inputs.target }} --token="$VERCEL_TOKEN"
+
+      - name: Build the Vercel artifact
+        shell: bash
+        run: |
+          arguments=(--token="$VERCEL_TOKEN")
+          if [[ "${{ inputs.target }}" == "production" ]]; then
+            arguments+=(--prod)
+          fi
+          pnpm dlx vercel@58.4.4 build "${arguments[@]}"
+
+      - name: Package immutable build evidence
+        run: tar -czf vercel-output.tgz .vercel/output
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: vercel-output.tgz
+
+      - name: Apply committed migrations once
+        run: |
+          pnpm db:migrate:deploy
+          pnpm db:migrate:status
+
+      - name: Deploy prebuilt artifact
+        id: deploy
+        shell: bash
+        run: |
+          arguments=(--prebuilt --token="$VERCEL_TOKEN")
+          if [[ "${{ inputs.target }}" == "production" ]]; then
+            arguments+=(--prod)
+          fi
+          deployment_url="$(pnpm dlx vercel@58.4.4 deploy "${arguments[@]}" | tail -n 1)"
+          if [[ ! "$deployment_url" =~ ^https:// ]]; then
+            echo "Vercel did not return a valid HTTPS deployment URL."
+            exit 1
+          fi
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Run post-deploy public smoke checks
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/deployment/smoke-deployment.mjs \
+            --base-url "${{ steps.deploy.outputs.url }}" \
+            --expected-version "${{ inputs.release_sha }}" | tee deployment-smoke.txt
+
+      - name: Upload release artifact and smoke evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: focused-${{ inputs.target }}-${{ inputs.release_sha }}
+          path: |
+            vercel-output.tgz
+            deployment-smoke.txt
+          if-no-files-found: error
+          retention-days: 30
