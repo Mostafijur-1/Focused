@@ -98,6 +98,29 @@ enum FocusStatus {
   ABANDONED
 }
 
+enum FocusIntervalKind {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+}
+
+enum FocusIntervalStatus {
+  RUNNING
+  PAUSED
+  COMPLETED
+  SKIPPED
+}
+
+enum FocusCommandType {
+  PAUSE
+  RESUME
+  EXTEND
+  COMPLETE
+  ABANDON
+  INTERRUPTION
+  ADVANCE_INTERVAL
+}
+
 enum HabitKind {
   BOOLEAN
   COUNT
@@ -284,6 +307,7 @@ model User {
   calendarConnections    CalendarConnection[]
   calendarEvents         CalendarEvent[]
   focusSessions          FocusSession[]
+  pomodoroPresets        PomodoroPreset[]
   habits                 Habit[]
   trackerItems           TrackerItem[]
   journalEntries         JournalEntry[]
@@ -850,51 +874,130 @@ model CalendarEvent {
 }
 
 model FocusSession {
-  id             String         @id @default(uuid()) @db.Uuid
-  userId         String         @db.Uuid
-  goalId         String?        @db.Uuid
-  kind           FocusKind
-  status         FocusStatus    @default(RUNNING)
-  intent         String         @db.VarChar(300)
-  plannedSeconds Int
-  startedAt      DateTime       @db.Timestamptz(6)
-  completedAt    DateTime?      @db.Timestamptz(6)
-  abandonedAt    DateTime?      @db.Timestamptz(6)
-  outcome        String?        @db.Text
-  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
-  version        Int            @default(1)
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal           Goal?          @relation(fields: [goalId], references: [id], onDelete: SetNull)
-  pauses         SessionPause[]
-  interruptions  Interruption[]
+  id                    String                @id @default(uuid()) @db.Uuid
+  userId                String                @db.Uuid
+  goalId                String?               @db.Uuid
+  pomodoroPresetId      String?               @db.Uuid
+  clientCommandId       String                @db.Uuid
+  kind                  FocusKind
+  status                FocusStatus           @default(RUNNING)
+  intent                String                @db.VarChar(300)
+  plannedSeconds        Int
+  completedFocusSeconds Int?
+  timeZone              String                @db.VarChar(80)
+  pomodoroConfig        Json?
+  startedAt             DateTime              @db.Timestamptz(6)
+  completedAt           DateTime?             @db.Timestamptz(6)
+  abandonedAt           DateTime?             @db.Timestamptz(6)
+  outcome               String?               @db.Text
+  createdAt             DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime              @updatedAt @db.Timestamptz(6)
+  version               Int                   @default(1)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal                  Goal?                 @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  pomodoroPreset        PomodoroPreset?       @relation(fields: [pomodoroPresetId], references: [id], onDelete: SetNull)
+  pauses                SessionPause[]
+  interruptions         Interruption[]
+  intervals             FocusInterval[]
+  commands              FocusSessionCommand[]
 
+  @@unique([userId, clientCommandId])
   @@index([userId, startedAt(sort: Desc), id(sort: Desc)])
   @@index([userId, status])
+  @@index([pomodoroPresetId])
   @@map("focus_sessions")
 }
 
-model SessionPause {
-  id             String       @id @default(uuid()) @db.Uuid
-  focusSessionId String       @db.Uuid
-  startedAt      DateTime     @db.Timestamptz(6)
-  endedAt        DateTime?    @db.Timestamptz(6)
-  reason         String?      @db.VarChar(160)
-  focusSession   FocusSession @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+model PomodoroPreset {
+  id                 String         @id @default(uuid()) @db.Uuid
+  userId             String         @db.Uuid
+  name               String         @db.VarChar(80)
+  focusSeconds       Int
+  shortBreakSeconds  Int
+  longBreakSeconds   Int
+  cycles             Int            @default(4)
+  longBreakEvery     Int            @default(4)
+  autoStartBreaks    Boolean        @default(false)
+  autoStartFocus     Boolean        @default(false)
+  audioEnabled       Boolean        @default(true)
+  vibrationEnabled   Boolean        @default(false)
+  isDefault          Boolean        @default(false)
+  createdByCommandId String         @db.Uuid
+  archivedAt         DateTime?      @db.Timestamptz(6)
+  createdAt          DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @db.Timestamptz(6)
+  version            Int            @default(1)
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions           FocusSession[]
+
+  @@unique([userId, createdByCommandId])
+  @@index([userId, archivedAt, isDefault])
+  @@map("pomodoro_presets")
+}
+
+model FocusInterval {
+  id             String              @id @default(uuid()) @db.Uuid
+  focusSessionId String              @db.Uuid
+  kind           FocusIntervalKind
+  status         FocusIntervalStatus @default(RUNNING)
+  cycleNumber    Int                 @default(1)
+  plannedSeconds Int
+  startedAt      DateTime            @db.Timestamptz(6)
+  endedAt        DateTime?           @db.Timestamptz(6)
+  createdAt      DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime            @updatedAt @db.Timestamptz(6)
+  version        Int                 @default(1)
+  focusSession   FocusSession        @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+  pauses         SessionPause[]
 
   @@index([focusSessionId, startedAt])
+  @@map("focus_intervals")
+}
+
+model FocusSessionCommand {
+  id              String           @id @default(uuid()) @db.Uuid
+  focusSessionId  String           @db.Uuid
+  clientCommandId String           @db.Uuid
+  type            FocusCommandType
+  resultVersion   Int
+  occurredAt      DateTime         @db.Timestamptz(6)
+  focusSession    FocusSession     @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([focusSessionId, clientCommandId])
+  @@index([focusSessionId, occurredAt])
+  @@map("focus_session_commands")
+}
+
+model SessionPause {
+  id               String         @id @default(uuid()) @db.Uuid
+  focusSessionId   String         @db.Uuid
+  focusIntervalId  String?        @db.Uuid
+  clientCommandId  String         @db.Uuid
+  endedByCommandId String?        @db.Uuid
+  startedAt        DateTime       @db.Timestamptz(6)
+  endedAt          DateTime?      @db.Timestamptz(6)
+  reason           String?        @db.VarChar(160)
+  focusSession     FocusSession   @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+  focusInterval    FocusInterval? @relation(fields: [focusIntervalId], references: [id], onDelete: Cascade)
+
+  @@unique([focusSessionId, clientCommandId])
+  @@unique([focusSessionId, endedByCommandId])
+  @@index([focusSessionId, startedAt])
+  @@index([focusIntervalId, startedAt])
   @@map("session_pauses")
 }
 
 model Interruption {
-  id             String       @id @default(uuid()) @db.Uuid
-  focusSessionId String       @db.Uuid
-  occurredAt     DateTime     @default(now()) @db.Timestamptz(6)
-  category       String       @db.VarChar(60)
-  note           String?      @db.VarChar(500)
-  resumed        Boolean?
-  focusSession   FocusSession @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+  id              String       @id @default(uuid()) @db.Uuid
+  focusSessionId  String       @db.Uuid
+  clientCommandId String       @db.Uuid
+  occurredAt      DateTime     @default(now()) @db.Timestamptz(6)
+  category        String       @db.VarChar(60)
+  note            String?      @db.VarChar(500)
+  resumed         Boolean?
+  focusSession    FocusSession @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
 
+  @@unique([focusSessionId, clientCommandId])
   @@index([focusSessionId, occurredAt])
   @@map("interruptions")
 }
