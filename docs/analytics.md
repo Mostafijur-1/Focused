@@ -85,6 +85,8 @@ Reports preserve the exact versioned snapshot and expire after 90 days. PDF is r
 4. Introduce formula changes under a new metric version. Never rewrite the meaning of `focused.analytics.v1`.
 5. Expired export bytes can be purged by a bounded scheduled cleanup job in the deployment operations milestone.
 
+After deploying the migration, load `DIRECT_URL` and run `pnpm db:analytics:verify`. The read-only check verifies the migration ledger, schema objects, metric and level seeds, and all eight member-role permission grants without printing credentials or member data.
+
 ## Verification
 
 - Unit golden fixtures cover denominators, rounding, empty data, Dhaka boundaries, leap days, and strict transport schemas.
