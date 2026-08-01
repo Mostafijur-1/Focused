@@ -1,0 +1,42 @@
+import type { NextRequest } from "next/server";
+
+import { getAdminService } from "@/features/admin/infrastructure/admin-container";
+import {
+  adminContext,
+  adminStepUpToken,
+  assertAdminMutationOrigin,
+} from "@/features/admin/transport/admin-route";
+import { approveRoleChangeSchema } from "@/features/admin/transport/admin-schemas";
+import { apiSuccess } from "@/lib/http/api-response";
+import { handleApiRoute, parseJson } from "@/lib/http/api-route";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export function POST(
+  request: NextRequest,
+  route: { params: Promise<{ approvalId: string }> },
+) {
+  return handleApiRoute(
+    request,
+    async (requestId) => {
+      assertAdminMutationOrigin(request);
+      const [context, body, params] = await Promise.all([
+        adminContext(request),
+        parseJson(request, approveRoleChangeSchema),
+        route.params,
+      ]);
+      return apiSuccess(
+        {
+          data: await getAdminService().approveRoleChange(context, {
+            ...body,
+            approvalId: params.approvalId,
+            stepUpToken: adminStepUpToken(request),
+          }),
+        },
+        requestId,
+      );
+    },
+    "Admin role change approval failed",
+  );
+}
