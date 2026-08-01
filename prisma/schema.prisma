@@ -207,7 +207,9 @@ enum AIRunStatus {
 
 enum AIProposalStatus {
   PENDING
+  APPLYING
   ACCEPTED
+  APPLY_FAILED
   REJECTED
   EXPIRED
   SUPERSEDED
@@ -1313,44 +1315,51 @@ model AIConversation {
 model AIMessage {
   id             String         @id @default(uuid()) @db.Uuid
   conversationId String         @db.Uuid
+  aiRunId        String?        @db.Uuid
   role           String         @db.VarChar(20)
   content        String         @db.Text
   citations      Json           @default("[]")
   model          String?        @db.VarChar(100)
   createdAt      DateTime       @default(now()) @db.Timestamptz(6)
   conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  aiRun          AIRun?         @relation(fields: [aiRunId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt, id])
+  @@index([aiRunId])
   @@map("ai_messages")
 }
 
 model AIRun {
-  id             String           @id @default(uuid()) @db.Uuid
-  userId         String           @db.Uuid
-  conversationId String?          @db.Uuid
-  kind           AIRunKind
-  status         AIRunStatus      @default(QUEUED)
-  promptVersion  String           @db.VarChar(80)
-  policyVersion  String           @db.VarChar(80)
-  modelAlias     String           @db.VarChar(60)
-  provider       String?          @db.VarChar(60)
-  model          String?          @db.VarChar(100)
-  inputManifest  Json             @default("{}")
-  output         Json?
-  evaluation     Json?
-  inputTokens    Int?
-  outputTokens   Int?
-  costMicros     BigInt?
-  queuedAt       DateTime         @default(now()) @db.Timestamptz(6)
-  startedAt      DateTime?        @db.Timestamptz(6)
-  completedAt    DateTime?        @db.Timestamptz(6)
-  expiresAt      DateTime?        @db.Timestamptz(6)
-  failureCode    String?          @db.VarChar(100)
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation   AIConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  contextGrants  AIContextGrant[]
-  proposals      AIProposal[]
+  id              String           @id @default(uuid()) @db.Uuid
+  userId          String           @db.Uuid
+  conversationId  String?          @db.Uuid
+  clientRequestId String           @db.Uuid
+  kind            AIRunKind
+  status          AIRunStatus      @default(QUEUED)
+  locale          String           @db.VarChar(12)
+  promptVersion   String           @db.VarChar(80)
+  policyVersion   String           @db.VarChar(80)
+  modelAlias      String           @db.VarChar(60)
+  provider        String?          @db.VarChar(60)
+  model           String?          @db.VarChar(100)
+  inputManifest   Json             @default("{}")
+  output          Json?
+  evaluation      Json?
+  inputTokens     Int?
+  outputTokens    Int?
+  costMicros      BigInt?
+  queuedAt        DateTime         @default(now()) @db.Timestamptz(6)
+  startedAt       DateTime?        @db.Timestamptz(6)
+  completedAt     DateTime?        @db.Timestamptz(6)
+  expiresAt       DateTime?        @db.Timestamptz(6)
+  failureCode     String?          @db.VarChar(100)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation    AIConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  contextGrants   AIContextGrant[]
+  proposals       AIProposal[]
+  messages        AIMessage[]
 
+  @@unique([userId, clientRequestId])
   @@index([userId, kind, queuedAt(sort: Desc)])
   @@index([status, queuedAt])
   @@map("ai_runs")
@@ -1376,22 +1385,28 @@ model AIContextGrant {
 }
 
 model AIProposal {
-  id            String           @id @default(uuid()) @db.Uuid
-  userId        String           @db.Uuid
-  aiRunId       String           @db.Uuid
-  targetType    String           @db.VarChar(80)
-  targetId      String?          @db.Uuid
-  targetVersion Int?
-  operation     String           @db.VarChar(80)
-  patch         Json
-  rationale     String?          @db.Text
-  status        AIProposalStatus @default(PENDING)
-  expiresAt     DateTime         @db.Timestamptz(6)
-  decidedAt     DateTime?        @db.Timestamptz(6)
-  createdAt     DateTime         @default(now()) @db.Timestamptz(6)
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  aiRun         AIRun            @relation(fields: [aiRunId], references: [id], onDelete: Cascade)
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @db.Uuid
+  aiRunId           String           @db.Uuid
+  targetType        String           @db.VarChar(80)
+  targetId          String?          @db.Uuid
+  targetVersion     Int?
+  operation         String           @db.VarChar(80)
+  patch             Json
+  editedPatch       Json?
+  rationale         String?          @db.Text
+  status            AIProposalStatus @default(PENDING)
+  expiresAt         DateTime         @db.Timestamptz(6)
+  decidedAt         DateTime?        @db.Timestamptz(6)
+  decisionNote      String?          @db.VarChar(500)
+  decisionCommandId String?          @db.Uuid
+  appliedResourceId String?          @db.Uuid
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  version           Int              @default(1)
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiRun             AIRun            @relation(fields: [aiRunId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, decisionCommandId])
   @@index([userId, status, expiresAt])
   @@map("ai_proposals")
 }
