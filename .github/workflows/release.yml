@@ -117,7 +117,7 @@ jobs:
           echo "RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.18.0
           run_install: false
