@@ -34,7 +34,7 @@
     "quality": "corepack pnpm db:validate && corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test:coverage && corepack pnpm test:deployment && corepack pnpm test:optimization && corepack pnpm api:lint && corepack pnpm build && corepack pnpm analyze:build"
   },
   "devDependencies": {
-    "@redocly/cli": "2.43.2",
+    "@redocly/cli": "2.43.3",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
     "prisma": "7.9.1"
